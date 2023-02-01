@@ -34,7 +34,7 @@
 #define IMGUI_GLSL_VERSION      "#version 330 core"
 
 // Properties
-const GLuint WIDTH = 800, HEIGHT = 800;
+const GLuint WIDTH = 1000, HEIGHT = 1000;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
 // Function prototypes
@@ -163,6 +163,16 @@ int main( )
     // Game loop
     while( !glfwWindowShouldClose( window ) )
     {
+        yawPress = false;
+        pitchPress = false;
+        rollPress = false;
+        
+        GLfloat textSizeYaw = 0.5f;
+        GLfloat textSizePitch = 0.5f;
+        GLfloat textSizeRoll = 0.5f;
+        
+        GLfloat amtIncr = 0.1f;
+
         // Set frame time
         GLfloat currentFrame = glfwGetTime( );
         deltaTime = currentFrame - lastFrame;
@@ -184,6 +194,7 @@ int main( )
         glm::mat4 PitchModel = glm::mat4(1.0f);
         glm::mat4 RollModel = glm::mat4(1.0f);
         
+        
         blinnPhongShader.Use( );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
@@ -203,44 +214,47 @@ int main( )
         YawModel = glm::mat4(1.0f);
         YawModel = glm::scale(YawModel, glm::vec3(0.15));
         YawModel = glm::rotate(YawModel, glm::radians(yawDeg), glm::vec3(0.0f, 1.0f, 0.0f));
+        YawModel = glm::rotate(YawModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         
         PitchModel = glm::mat4(1.0f);
         PitchModel = glm::scale(PitchModel, glm::vec3(0.15));
-        PitchModel = glm::rotate(PitchModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         PitchModel = glm::rotate(PitchModel, glm::radians(pitchDeg), glm::vec3(1.0f, 0.0f, 0.0f));
 
         RollModel = glm::mat4(1.0f);
         RollModel = glm::scale(RollModel, glm::vec3(0.15));
-        RollModel = glm::rotate(RollModel, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         RollModel = glm::rotate(RollModel, glm::radians(rollDeg), glm::vec3(0.0f, 0.0f, 1.0f));
-
-//        glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
-//        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( YawModel ) );
-//        Circle.Draw( blinnPhongShader );
-//        if (yawPress){
-//            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 1.0f );
-//        }else{
-//            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 0.3f );
-//        }
-
+        RollModel = glm::rotate(RollModel, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
+        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( YawModel ) );
         Circle.Draw( blinnPhongShader );
-        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( RollModel ) );
-        if (rollPress){
-            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 1.0f );
+        if (yawPress){
+            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 1.0f );
+            textSizeYaw += amtIncr;
         }else{
-            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 0.3f );
+            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 0.3f );
         }
-
+        
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
-        Circle.Draw( blinnPhongShader );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PitchModel ) );
+        Circle.Draw( blinnPhongShader );
         if (pitchPress){
             glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 1.0f, 0.0f, 1.0f );
+            textSizePitch += amtIncr;
         }else{
             glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 1.0f, 0.0f, 0.3f );
         }
         
+        glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
+        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( RollModel ) );
+        Circle.Draw( blinnPhongShader );
+        if (rollPress){
+            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 1.0f );
+            textSizeRoll += amtIncr;
+        }else{
+            glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 0.3f );
+        }
+
 
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PropellerModel ) );
@@ -251,6 +265,10 @@ int main( )
         Plane.Draw( blinnPhongShader );
         
         blinnPhongLighting( blinnPhongShader );
+        
+        text.RenderText(textShader, "Y - Yaw", 10.0f, 80.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 1.0f));
+        text.RenderText(textShader, "P - Pitch", 10.0f, 50.0f, textSizePitch, glm::vec3(0.0f, 1.0f, 0.0f));
+        text.RenderText(textShader, "R - Roll", 10.0f, 20.0f, textSizeRoll, glm::vec3(1.0f, 0.0f, 0.0f));
         
         ImGuiWindowing();
         // Swap the buffers
@@ -265,27 +283,28 @@ int main( )
 void DoMovement( )
 {
     // Camera controls
-    if ( keys[GLFW_KEY_W] || keys[GLFW_KEY_UP] )
-    {
-        camera.ProcessKeyboard( FORWARD, deltaTime );
-    }
+//    if ( keys[GLFW_KEY_UP] )
+//    {
+//        camera.ProcessKeyboard( FORWARD, deltaTime );
+//    }
+//
+//    if ( keys[GLFW_KEY_DOWN])
+//    {
+//        camera.ProcessKeyboard( BACKWARD, deltaTime );
+//    }
+//
+//    if ( keys[GLFW_KEY_LEFT] )
+//    {
+//        camera.ProcessKeyboard( LEFT, deltaTime );
+//    }
+//
+//    if ( keys[GLFW_KEY_RIGHT] )
+//    {
+//        camera.ProcessKeyboard( RIGHT, deltaTime );
+//    }
     
-    if ( keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN] )
-    {
-        camera.ProcessKeyboard( BACKWARD, deltaTime );
-    }
-    
-    if ( keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT] )
-    {
-        camera.ProcessKeyboard( LEFT, deltaTime );
-    }
-
-    if ( keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT] )
-    {
-        camera.ProcessKeyboard( RIGHT, deltaTime );
-    }
-    
-    if ( keys[GLFW_KEY_Y] )
+    // YAW
+    if ( keys[GLFW_KEY_Y] ||  keys[GLFW_KEY_D])
     {
         yawDeg += 0.5f;
         yawPress = true;
@@ -293,19 +312,43 @@ void DoMovement( )
         rollPress = false;
     }
     
+    if ( keys[GLFW_KEY_A])
+    {
+        yawDeg -= 0.5f;
+        yawPress = true;
+        pitchPress = false;
+        rollPress = false;
+    }
+    
     // PITCH
-    if ( keys[GLFW_KEY_P] )
+    if ( keys[GLFW_KEY_P] || keys[GLFW_KEY_S] )
     {
         pitchDeg += 0.5f;
         yawPress = false;
         pitchPress = true;
         rollPress = false;
     }
+    
+    if ( keys[GLFW_KEY_W] )
+    {
+        pitchDeg -= 0.5f;
+        yawPress = false;
+        pitchPress = true;
+        rollPress = false;
+    }
 
     // ROLL
-    if ( keys[GLFW_KEY_R] )
+    if ( keys[GLFW_KEY_R] ||  keys[GLFW_KEY_Q])
     {
         rollDeg += 0.5f;
+        yawPress = false;
+        pitchPress = false;
+        rollPress = true;
+    }
+    
+    if ( keys[GLFW_KEY_E])
+    {
+        rollDeg -= 0.5f;
         yawPress = false;
         pitchPress = false;
         rollPress = true;
