@@ -100,6 +100,21 @@ public:
         
     }
     
+    void FPP(){
+        this->yaw = 90.0f;
+        this->pitch = -25.25;
+        this->position = glm::vec3(0.0f, 0.36f, 0.31f);
+        this->updateCameraVectors();
+        this->fpp = true;
+    }
+    
+    void TPP(){
+        this->yaw = -90.0f;
+        this->pitch = 0.0f;
+        this->position = glm::vec3(0.0f, 0.0f, 3.0f);
+        this->updateCameraVectors();
+    }
+    
     GLfloat GetZoom( )
     {
         return this->zoom;
@@ -128,6 +143,8 @@ private:
     GLfloat movementSpeed;
     GLfloat mouseSensitivity;
     GLfloat zoom;
+    
+    bool fpp = false;
     
     void updateCameraVectors( )
     {
