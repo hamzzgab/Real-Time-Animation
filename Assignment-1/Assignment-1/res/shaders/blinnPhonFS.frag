@@ -26,7 +26,6 @@ uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
 
-uniform bool blinn;
 uniform float shininess;
 
 uniform bool useIt = true;
@@ -52,14 +51,10 @@ void main()
         vec3 viewDir = normalize(viewPos - FragPos);
         
         float spec = 0.0f;
-        //BLINN
-        if (blinn){
-            vec3 halfwayDir = normalize(lightDir + viewDir);
-            spec = pow(max(dot(Normal, halfwayDir), 0.0), shininess);
-        }else{
-            vec3 reflectDir = reflect(-lightDir, norm);
-            spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-        }
+        
+        vec3 reflectDir = reflect(-lightDir, norm);
+        spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    
 
         vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords)) / distance * distance;
         

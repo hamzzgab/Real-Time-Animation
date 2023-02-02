@@ -77,8 +77,6 @@ void blinnPhongLighting(Shader shader){
     glUniform3f( glGetUniformLocation( shader.Program, "light.diffuse" ), 0.5f, 0.5f, 0.5f );
     glUniform3f( glGetUniformLocation( shader.Program, "light.specular" ), 1.0f, 1.0f, 1.0f );
 
-    glUniform1i( glGetUniformLocation( shader.Program, "blinn" ), false ? 1 : 0 );
-    
     glUniform1f( glGetUniformLocation( shader.Program, "shininess" ), 32.0f );
 }
 
@@ -183,7 +181,7 @@ int main( )
         DoMovement( );
         
         // Clear the colorbuffer
-        glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         
         glm::mat4 view = camera.GetViewMatrix( );
@@ -203,26 +201,28 @@ int main( )
         PlaneModel = glm::scale(PlaneModel, glm::vec3(0.2));
         
         PlaneModel = glm::rotate(PlaneModel, glm::radians(yawDeg), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 PlaneYaw = PlaneModel;
+        
         PlaneModel = glm::rotate(PlaneModel, glm::radians(pitchDeg), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 PlanePitch = PlaneModel;
+        
         PlaneModel = glm::rotate(PlaneModel, glm::radians(rollDeg), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 PlaneRoll = PlaneModel;
 
         PropellerModel = glm::mat4(1.0f);
         PropellerModel = glm::translate( PropellerModel, glm::vec3( 0.0f, 0.0f, 3.6f ) );
         PropellerModel = PlaneModel * PropellerModel;
         PropellerModel = glm::rotate(PropellerModel, (GLfloat)glfwGetTime()*100.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 
-        YawModel = glm::mat4(1.0f);
-        YawModel = glm::scale(YawModel, glm::vec3(0.15));
-        YawModel = glm::rotate(YawModel, glm::radians(yawDeg), glm::vec3(0.0f, 1.0f, 0.0f));
+        YawModel *= PlaneYaw;
+        YawModel = glm::scale(YawModel, glm::vec3(0.75));
         YawModel = glm::rotate(YawModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         
-        PitchModel = glm::mat4(1.0f);
-        PitchModel = glm::scale(PitchModel, glm::vec3(0.15));
-        PitchModel = glm::rotate(PitchModel, glm::radians(pitchDeg), glm::vec3(1.0f, 0.0f, 0.0f));
+        PitchModel *= PlanePitch;
+        PitchModel = glm::scale(PitchModel, glm::vec3(0.75));
 
-        RollModel = glm::mat4(1.0f);
-        RollModel = glm::scale(RollModel, glm::vec3(0.15));
-        RollModel = glm::rotate(RollModel, glm::radians(rollDeg), glm::vec3(0.0f, 0.0f, 1.0f));
+        RollModel *= PlaneRoll;
+        RollModel = glm::scale(RollModel, glm::vec3(0.75));
         RollModel = glm::rotate(RollModel, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
