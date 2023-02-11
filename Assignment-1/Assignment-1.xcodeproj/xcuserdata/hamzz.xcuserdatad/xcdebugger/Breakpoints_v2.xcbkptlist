@@ -7,16 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "BFFE2378-6AD1-42C1-9140-E796A4FB619B"
-            shouldBeEnabled = "No"
+            uuid = "790CD928-F994-4B7B-9A03-3BAD699ACAAE"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Assignment-1/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "201"
-            endingLineNumber = "201"
-            landmarkName = "main()"
+            startingLineNumber = "403"
+            endingLineNumber = "403"
+            landmarkName = "DoMovement()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

@@ -13,11 +13,16 @@
 #include "Camera.h"
 #include "Model.h"
 #include "Text.h"
+#include "Texture.h"
+#include "maths_funcs.h"
 
 // GLM Mathemtics
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 // Other Libs
 #include "imgui/imgui.h"
@@ -45,10 +50,8 @@ void DoMovement( );
 void ImGuiInit();
 void ImGuiWindowing();
 
-// PROPS
-GLfloat yawDeg = 0.0f;
-GLfloat pitchDeg = 0.0f;
-GLfloat rollDeg = 0.0f;
+// ROTATIONS
+glm::vec3 RotationAxis = glm::vec3(0.0f, 0.0f, 0.0f);
 
 bool yawPress = false;
 bool pitchPress = false;
@@ -70,6 +73,17 @@ GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
 bool yaw_set = false;
+
+glm::mat4 PlaneModel = glm::mat4(1.0f);
+glm::mat4 PropellerModel = glm::mat4(1.0f);
+glm::mat4 YawModel = glm::mat4(1.0f);
+glm::mat4 PitchModel = glm::mat4(1.0f);
+glm::mat4 RollModel = glm::mat4(1.0f);
+
+glm::mat4 PlanePitch = glm::mat4(1.0f);
+glm::mat4 PlaneYaw = glm::mat4(1.0f);
+glm::mat4 PlaneRoll = glm::mat4(1.0f);
+
 
 void blinnPhongLighting(Shader shader){
     GLint lightDirLoc = glGetUniformLocation( shader.Program, "light.direction" );
@@ -134,18 +148,86 @@ int main( )
     // OpenGL options
     glEnable( GL_DEPTH_TEST );
     
-    // Setup and compile our shaders
-    Shader blinnPhongShader( "res/shaders/blinnPhonVS.vs", "res/shaders/blinnPhonFS.frag" );
+    // LIGHTING
+    Shader blinnPhongShader( "res/shaders/blinnPhongVS.vs", "res/shaders/blinnPhongFS.frag" );
     
-    // Load models
+    // MODELS
     Model Plane( "res/models/plane.obj" );
     Model Propeller( "res/models/propeller.obj" );
     Model Circle( "res/models/Circle.obj" );
 
-    // Draw in wireframe
-    //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // SKYBOX
+    Shader skyboxShader( "res/shaders/skybox.vs", "res/shaders/skybox.frag" );
+
+    GLfloat skyboxVertices[] = {
+            // positions
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            -1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f
+        };
     
-    glm::mat4 projection = glm::perspective( camera.GetZoom( ), ( float )SCREEN_WIDTH/( float )SCREEN_HEIGHT, 0.1f, 100.0f );
+    // Setup skybox VAO
+    GLuint skyboxVAO, skyboxVBO;
+    glGenVertexArrays( 1, &skyboxVAO );
+    glGenBuffers( 1, &skyboxVBO );
+    glBindVertexArray( skyboxVAO );
+    glBindBuffer( GL_ARRAY_BUFFER, skyboxVBO );
+    glBufferData( GL_ARRAY_BUFFER, sizeof( skyboxVertices ), &skyboxVertices, GL_STATIC_DRAW );
+    glEnableVertexAttribArray( 0 );
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof( GLfloat ), ( GLvoid * ) 0 );
+    glBindVertexArray(0);
+    
+    // Cubemap (Skybox)
+    vector<const GLchar*> faces;
+    faces.push_back( "res/images/skybox/Tower/px.png" );
+    faces.push_back( "res/images/skybox/Tower/nx.png" );
+    faces.push_back( "res/images/skybox/Tower/py.png" );
+    faces.push_back( "res/images/skybox/Tower/ny.png" );
+    faces.push_back( "res/images/skybox/Tower/pz.png" );
+    faces.push_back( "res/images/skybox/Tower/nz.png" );
+    GLuint cubemapTexture = TextureLoading::LoadCubemap( faces );
+
+    
+    glm::mat4 projection = glm::perspective( camera.GetZoom( ), ( float )SCREEN_WIDTH/( float )SCREEN_HEIGHT, 0.1f, 1000.0f );
+
     
     ImGuiInit();
     
@@ -202,31 +284,40 @@ int main( )
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
         
+        /*
+        PITCH  - X
+        YAW    - Y
+        ROTATE - Z
+        */
+        
         PlaneModel = glm::mat4(1.0f);
         PlaneModel = glm::scale(PlaneModel, glm::vec3(0.2));
         
-        PlaneModel = glm::rotate(PlaneModel, glm::radians(yawDeg), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 PlaneYaw = PlaneModel;
+//        PlaneModel = glm::eulerAngleXYZ(RotationAxis.x, RotationAxis.y, RotationAxis.z);
         
-        PlaneModel = glm::rotate(PlaneModel, glm::radians(pitchDeg), glm::vec3(1.0f, 0.0f, 0.0f));
-        glm::mat4 PlanePitch = PlaneModel;
-        
-        PlaneModel = glm::rotate(PlaneModel, glm::radians(rollDeg), glm::vec3(0.0f, 0.0f, 1.0f));
-        glm::mat4 PlaneRoll = PlaneModel;
+        PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        PlaneYaw = PlaneModel;
+
+        PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        PlanePitch = PlaneModel;
+
+        PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        PlaneRoll = PlaneModel;
 
         PropellerModel = glm::mat4(1.0f);
         PropellerModel = glm::translate( PropellerModel, glm::vec3( 0.0f, 0.0f, 3.6f ) );
         PropellerModel = PlaneModel * PropellerModel;
         PropellerModel = glm::rotate(PropellerModel, (GLfloat)glfwGetTime()*100.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-
-        if (gridOn){
+        
+        if (gridOn)
+        {
             YawModel *= PlaneYaw;
             YawModel = glm::scale(YawModel, glm::vec3(0.75));
             YawModel = glm::rotate(YawModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             
             PitchModel *= PlanePitch;
             PitchModel = glm::scale(PitchModel, glm::vec3(0.75));
-
+            
             RollModel *= PlaneRoll;
             RollModel = glm::scale(RollModel, glm::vec3(0.75));
             RollModel = glm::rotate(RollModel, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -234,6 +325,7 @@ int main( )
             glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( YawModel ) );
             Circle.Draw( blinnPhongShader );
+            
             if (yawPress){
                 glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 1.0f );
                 textSizeYaw += amtIncr;
@@ -244,6 +336,7 @@ int main( )
             glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PitchModel ) );
             Circle.Draw( blinnPhongShader );
+            
             if (pitchPress){
                 glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 1.0f, 0.0f, 1.0f );
                 textSizePitch += amtIncr;
@@ -254,6 +347,7 @@ int main( )
             glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( RollModel ) );
             Circle.Draw( blinnPhongShader );
+            
             if (rollPress){
                 glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 1.0f );
                 textSizeRoll += amtIncr;
@@ -261,7 +355,6 @@ int main( )
                 glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 0.3f );
             }
         }
-
 
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PropellerModel ) );
@@ -277,10 +370,26 @@ int main( )
         text.RenderText(textShader, "P - Pitch", 10.0f, 50.0f, textSizePitch, glm::vec3(0.0f, 1.0f, 0.0f));
         text.RenderText(textShader, "R - Roll", 10.0f, 20.0f, textSizeRoll, glm::vec3(1.0f, 0.0f, 0.0f));
         
+        /*
+        // Draw skybox as last
+        glDepthFunc( GL_LEQUAL );
+        skyboxShader.Use( );
+        view = glm::mat4( glm::mat3( camera.GetViewMatrix( ) ) );
+        glUniformMatrix4fv( glGetUniformLocation( skyboxShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
+        glUniformMatrix4fv( glGetUniformLocation( skyboxShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
+        glBindVertexArray( skyboxVAO );
+        glBindTexture( GL_TEXTURE_CUBE_MAP, cubemapTexture );
+        glDrawArrays( GL_TRIANGLES, 0, 36 );
+        glBindVertexArray( 0 );
+        glDepthFunc( GL_LESS );
+         */
+        
         ImGuiWindowing();
         // Swap the buffers
         glfwSwapBuffers( window );
     }
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
     
     glfwTerminate( );
     return 0;
@@ -309,10 +418,16 @@ void DoMovement( )
         camera.ProcessKeyboard( RIGHT, deltaTime );
     }
     
+    /*
+    PITCH  - X
+    YAW    - Y
+    ROTATE - Z
+    */
+    
     // YAW
     if ( keys[GLFW_KEY_Y] ||  keys[GLFW_KEY_D])
     {
-        yawDeg += 0.5f;
+        RotationAxis.y += 0.5f;
         yawPress = true;
         pitchPress = false;
         rollPress = false;
@@ -320,7 +435,7 @@ void DoMovement( )
     
     if ( keys[GLFW_KEY_A])
     {
-        yawDeg -= 0.5f;
+        RotationAxis.y -= 0.5f;
         yawPress = true;
         pitchPress = false;
         rollPress = false;
@@ -329,7 +444,7 @@ void DoMovement( )
     // PITCH
     if ( keys[GLFW_KEY_P] || keys[GLFW_KEY_S] )
     {
-        pitchDeg += 0.5f;
+        RotationAxis.x += 0.5f;
         yawPress = false;
         pitchPress = true;
         rollPress = false;
@@ -337,7 +452,7 @@ void DoMovement( )
     
     if ( keys[GLFW_KEY_W] )
     {
-        pitchDeg -= 0.5f;
+        RotationAxis.x -= 0.5f;
         yawPress = false;
         pitchPress = true;
         rollPress = false;
@@ -346,7 +461,7 @@ void DoMovement( )
     // ROLL
     if ( keys[GLFW_KEY_R] ||  keys[GLFW_KEY_Q])
     {
-        rollDeg += 0.5f;
+        RotationAxis.z += 0.5f;
         yawPress = false;
         pitchPress = false;
         rollPress = true;
@@ -354,7 +469,7 @@ void DoMovement( )
     
     if ( keys[GLFW_KEY_E])
     {
-        rollDeg -= 0.5f;
+        RotationAxis.z -= 0.5f;
         yawPress = false;
         pitchPress = false;
         rollPress = true;
@@ -362,9 +477,9 @@ void DoMovement( )
 
     if ( keys[GLFW_KEY_O] )
     {
-        yawDeg = 0.0f;
-        pitchDeg = 0.0f;
-        rollDeg = 0.0f;
+        RotationAxis.x = 0.0f;
+        RotationAxis.y = 0.0f;
+        RotationAxis.z = 0.0f;
     }
     
     if ( keys[GLFW_KEY_F] )
@@ -449,11 +564,11 @@ void ImGuiWindowing() {
             if (ImGui::BeginTable("ColorAttributes_1", 1))
             {
                 ImGui::TableNextColumn();
-                ImGui::InputFloat("Yaw Degree", &yawDeg);
+                ImGui::InputFloat("Pitch Degree", &RotationAxis.x);
                 ImGui::TableNextColumn();
-                ImGui::InputFloat("Pitch Degree", &pitchDeg);
+                ImGui::InputFloat("Yaw Degree", &RotationAxis.y);
                 ImGui::TableNextColumn();
-                ImGui::InputFloat("Roll Degree", &rollDeg);
+                ImGui::InputFloat("Roll Degree", &RotationAxis.z);
                 ImGui::EndTable();
             }
             ImGui::TreePop();
