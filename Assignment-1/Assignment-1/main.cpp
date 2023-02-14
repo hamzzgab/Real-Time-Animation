@@ -21,7 +21,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 // Other Libs
@@ -39,7 +38,7 @@
 #define IMGUI_GLSL_VERSION      "#version 330 core"
 
 // Properties
-const GLuint WIDTH = 1000, HEIGHT = 1000;
+const GLuint WIDTH = 1600, HEIGHT = 1000;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
 // Function prototypes
@@ -72,11 +71,12 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-bool yaw_set = false;
+GLfloat movementSpeed = 0.5f;
+glm::vec3 QuaternionAxis = glm::vec3(0.0f, 0.0f, 0.0f);
 
-glm::mat4 PlaneModel = glm::mat4(1.0f);
+glm::mat4 PlaneModel     = glm::mat4(1.0f);
 glm::mat4 PropellerModel = glm::mat4(1.0f);
-glm::mat4 YawModel = glm::mat4(1.0f);
+glm::mat4 YawModel       = glm::mat4(1.0f);
 glm::mat4 PitchModel = glm::mat4(1.0f);
 glm::mat4 RollModel = glm::mat4(1.0f);
 
@@ -84,6 +84,12 @@ glm::mat4 PlanePitch = glm::mat4(1.0f);
 glm::mat4 PlaneYaw = glm::mat4(1.0f);
 glm::mat4 PlaneRoll = glm::mat4(1.0f);
 
+glm::mat4 planeMatrix = glm::mat4(1.0f);
+
+glm::quat planeOGQuat = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+
+bool quaternion_set = false;
+bool euler_set = true;
 
 void blinnPhongLighting(Shader shader){
     GLint lightDirLoc = glGetUniformLocation( shader.Program, "light.direction" );
@@ -258,6 +264,7 @@ int main( )
         GLfloat textSizeRoll = 0.5f;
         
         GLfloat amtIncr = 0.1f;
+        GLfloat scaleGrid = 0.5f;
 
         // Set frame time
         GLfloat currentFrame = glfwGetTime( );
@@ -269,7 +276,7 @@ int main( )
         DoMovement( );
         
         // Clear the colorbuffer
-        glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+        glClearColor(0.5f, 0.5f, 0.5f, 0.1f);
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         
         glm::mat4 view = camera.GetViewMatrix( );
@@ -293,16 +300,25 @@ int main( )
         PlaneModel = glm::mat4(1.0f);
         PlaneModel = glm::scale(PlaneModel, glm::vec3(0.2));
         
-//        PlaneModel = glm::eulerAngleXYZ(RotationAxis.x, RotationAxis.y, RotationAxis.z);
+        glm::mat4 rotationMatrix = glm::toMat4(planeOGQuat);
+
+        if (quaternion_set)
+        {
+            PlaneModel = PlaneModel * rotationMatrix;
+            gridOn = false;
+        }
         
-        PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        PlaneYaw = PlaneModel;
-
-        PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        PlanePitch = PlaneModel;
-
-        PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.z), glm::vec3(0.0f, 0.0f, 1.0f));
-        PlaneRoll = PlaneModel;
+        if ( euler_set )
+        {
+            PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.y), glm::vec3(0.0f, 1.0f, 0.0f));
+            PlaneYaw = PlaneModel;
+            
+            PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.z), glm::vec3(0.0f, 0.0f, 1.0f));
+            PlaneRoll = PlaneModel;
+            
+            PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.x), glm::vec3(1.0f, 0.0f, 0.0f));
+            PlanePitch = PlaneModel;
+        }
 
         PropellerModel = glm::mat4(1.0f);
         PropellerModel = glm::translate( PropellerModel, glm::vec3( 0.0f, 0.0f, 3.6f ) );
@@ -311,15 +327,25 @@ int main( )
         
         if (gridOn)
         {
+            
+            if ( euler_set )
+            {
+                scaleGrid = 0.5f;
+            }
+            else if ( quaternion_set )
+            {
+                scaleGrid = 0.1f;
+            }
+            
             YawModel *= PlaneYaw;
-            YawModel = glm::scale(YawModel, glm::vec3(0.75));
+            YawModel = glm::scale(YawModel, glm::vec3(scaleGrid));
             YawModel = glm::rotate(YawModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             
             PitchModel *= PlanePitch;
-            PitchModel = glm::scale(PitchModel, glm::vec3(0.75));
+            PitchModel = glm::scale(PitchModel, glm::vec3(scaleGrid));
             
             RollModel *= PlaneRoll;
-            RollModel = glm::scale(RollModel, glm::vec3(0.75));
+            RollModel = glm::scale(RollModel, glm::vec3(scaleGrid));
             RollModel = glm::rotate(RollModel, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
             
             glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
@@ -354,6 +380,16 @@ int main( )
             }else{
                 glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 0.3f );
             }
+        }else{
+            if (yawPress){
+                textSizeYaw += amtIncr;
+            }
+            if (pitchPress){
+                textSizePitch += amtIncr;
+            }
+            if (rollPress){
+                textSizeRoll += amtIncr;
+            }
         }
 
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
@@ -366,11 +402,19 @@ int main( )
         
         blinnPhongLighting( blinnPhongShader );
         
+        if ( euler_set )
+        {
+            text.RenderText(textShader, "Euler Rotations", 325.0f, 550.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 0.0f));
+        }
+        else if ( quaternion_set )
+        {
+            text.RenderText(textShader, "Quaternion Rotations", 255.0f, 550.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 0.0f));
+        }
+        
         text.RenderText(textShader, "Y - Yaw", 10.0f, 80.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 1.0f));
         text.RenderText(textShader, "P - Pitch", 10.0f, 50.0f, textSizePitch, glm::vec3(0.0f, 1.0f, 0.0f));
         text.RenderText(textShader, "R - Roll", 10.0f, 20.0f, textSizeRoll, glm::vec3(1.0f, 0.0f, 0.0f));
         
-        /*
         // Draw skybox as last
         glDepthFunc( GL_LEQUAL );
         skyboxShader.Use( );
@@ -382,7 +426,6 @@ int main( )
         glDrawArrays( GL_TRIANGLES, 0, 36 );
         glBindVertexArray( 0 );
         glDepthFunc( GL_LESS );
-         */
         
         ImGuiWindowing();
         // Swap the buffers
@@ -427,7 +470,12 @@ void DoMovement( )
     // YAW
     if ( keys[GLFW_KEY_Y] ||  keys[GLFW_KEY_D])
     {
-        RotationAxis.y += 0.5f;
+        RotationAxis.y += movementSpeed;
+        
+        QuaternionAxis.y += movementSpeed;
+        glm::quat quatY = glm::quat(glm::cos(glm::radians(movementSpeed / 2.0f)), glm::vec3(0.0f, 1.0f, 0.0f) * glm::sin(glm::radians(movementSpeed) / 2.0f));
+        planeOGQuat = planeOGQuat * quatY;
+        
         yawPress = true;
         pitchPress = false;
         rollPress = false;
@@ -435,7 +483,12 @@ void DoMovement( )
     
     if ( keys[GLFW_KEY_A])
     {
-        RotationAxis.y -= 0.5f;
+        RotationAxis.y -= movementSpeed;
+        
+        QuaternionAxis.y -= movementSpeed;
+        glm::quat quatY = glm::quat(glm::cos(glm::radians(-movementSpeed / 2.0f)), glm::vec3(0.0f, 1.0f, 0.0f) * glm::sin(glm::radians(-movementSpeed) / 2.0f));
+        planeOGQuat = planeOGQuat * quatY;
+        
         yawPress = true;
         pitchPress = false;
         rollPress = false;
@@ -444,7 +497,12 @@ void DoMovement( )
     // PITCH
     if ( keys[GLFW_KEY_P] || keys[GLFW_KEY_S] )
     {
-        RotationAxis.x += 0.5f;
+        RotationAxis.x += movementSpeed;
+        
+        QuaternionAxis.x += 20.0f;
+        glm::quat quatX = glm::quat(glm::cos(glm::radians(movementSpeed / 2.0f)), glm::vec3(1.0f, 0.0f, 0.0f) * glm::sin(glm::radians(movementSpeed) / 2.0f));
+        planeOGQuat = planeOGQuat * quatX;
+        
         yawPress = false;
         pitchPress = true;
         rollPress = false;
@@ -452,7 +510,12 @@ void DoMovement( )
     
     if ( keys[GLFW_KEY_W] )
     {
-        RotationAxis.x -= 0.5f;
+        RotationAxis.x -= movementSpeed;
+        
+        QuaternionAxis.x -= movementSpeed;
+        glm::quat quatX = glm::quat(glm::cos(glm::radians(-movementSpeed / 2.0f)), glm::vec3(1.0f, 0.0f, 0.0f) * glm::sin(glm::radians(-movementSpeed) / 2.0f));
+        planeOGQuat = planeOGQuat * quatX;
+        
         yawPress = false;
         pitchPress = true;
         rollPress = false;
@@ -461,7 +524,12 @@ void DoMovement( )
     // ROLL
     if ( keys[GLFW_KEY_R] ||  keys[GLFW_KEY_Q])
     {
-        RotationAxis.z += 0.5f;
+        RotationAxis.z += movementSpeed;
+        
+        QuaternionAxis.z += movementSpeed;
+        glm::quat quatZ = glm::quat(glm::cos(glm::radians(movementSpeed / 2.0f)), glm::vec3(0.0f, 0.0f, 1.0f) * glm::sin(glm::radians(movementSpeed) / 2.0f));
+        planeOGQuat = planeOGQuat * quatZ;
+        
         yawPress = false;
         pitchPress = false;
         rollPress = true;
@@ -469,7 +537,12 @@ void DoMovement( )
     
     if ( keys[GLFW_KEY_E])
     {
-        RotationAxis.z -= 0.5f;
+        RotationAxis.z -= movementSpeed;
+        
+        QuaternionAxis.z += movementSpeed;
+        glm::quat quatZ = glm::quat(glm::cos(glm::radians(-movementSpeed / 2.0f)), glm::vec3(0.0f, 0.0f, 1.0f) * glm::sin(glm::radians(-movementSpeed) / 2.0f));
+        planeOGQuat = planeOGQuat * quatZ;
+        
         yawPress = false;
         pitchPress = false;
         rollPress = true;
@@ -480,6 +553,10 @@ void DoMovement( )
         RotationAxis.x = 0.0f;
         RotationAxis.y = 0.0f;
         RotationAxis.z = 0.0f;
+        
+        QuaternionAxis.x = 0.0f;
+        QuaternionAxis.y = 0.0f;
+        QuaternionAxis.z = 0.0f;
     }
     
     if ( keys[GLFW_KEY_F] )
@@ -519,6 +596,68 @@ void KeyCallback( GLFWwindow *window, int key, int scancode, int action, int mod
         {
             gridOn = !gridOn;
         }
+        
+        if ( keys[GLFW_KEY_1] )
+        {
+            euler_set = true;
+            quaternion_set = false;
+        }
+        
+        if ( keys[GLFW_KEY_2] )
+        {
+            euler_set = false;
+            quaternion_set = true;
+        }
+        
+        /*
+        if ( keys [GLFW_KEY_Z] )
+        {
+            QuaternionAxis.x += 30 * deltaTime;
+            yawPress = false;
+            pitchPress = true;
+            rollPress = false;
+        }
+        
+        if ( keys [GLFW_KEY_X] )
+        {
+            QuaternionAxis.y += 30 * deltaTime;
+            yawPress = true;
+            pitchPress = false;
+            rollPress = false;
+        }
+        
+        if ( keys [GLFW_KEY_C] )
+        {
+            QuaternionAxis.z += 30 * deltaTime;
+            yawPress = false;
+            pitchPress = false;
+            rollPress = true;
+        }
+
+        if ( keys [GLFW_KEY_V] )
+        {
+            QuaternionAxis.x -= 30 * deltaTime;
+            yawPress = false;
+            pitchPress = true;
+            rollPress = false;
+        }
+        
+        if ( keys [GLFW_KEY_B] )
+        {
+            QuaternionAxis.y -= 30 * deltaTime;
+            yawPress = true;
+            pitchPress = false;
+            rollPress = false;
+        }
+        
+        if ( keys [GLFW_KEY_N] )
+        {
+            QuaternionAxis.z -= 30 * deltaTime;
+            yawPress = false;
+            pitchPress = false;
+            rollPress = true;
+        }
+         */
     }
 }
 
@@ -564,11 +703,11 @@ void ImGuiWindowing() {
             if (ImGui::BeginTable("ColorAttributes_1", 1))
             {
                 ImGui::TableNextColumn();
-                ImGui::InputFloat("Pitch Degree", &RotationAxis.x);
+                ImGui::InputFloat("Pitch Degree", &QuaternionAxis.x);
                 ImGui::TableNextColumn();
-                ImGui::InputFloat("Yaw Degree", &RotationAxis.y);
+                ImGui::InputFloat("Yaw Degree", &QuaternionAxis.y);
                 ImGui::TableNextColumn();
-                ImGui::InputFloat("Roll Degree", &RotationAxis.z);
+                ImGui::InputFloat("Roll Degree", &QuaternionAxis.z);
                 ImGui::EndTable();
             }
             ImGui::TreePop();
