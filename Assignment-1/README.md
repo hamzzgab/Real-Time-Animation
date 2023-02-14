@@ -1,7 +1,6 @@
 # Assignment 1
 
 ### TODO
-- [ ] Overcome gimbal-lock using quaternions
 
 ### In Progress
 - [ ] Lock camera in FPP to the model
@@ -11,3 +10,4 @@
 - [x] Observe gimbal-lock occuring when 2 axes are aligned
 - [x] Switch between FPP & TPP views
 - [x] Good visual appearance of the plane
+- [x] Overcome gimbal-lock using quaternions
