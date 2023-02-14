@@ -100,6 +100,14 @@ public:
         
     }
     
+    void GetVals(GLfloat yaw, GLfloat pitch, glm::vec3 position){
+        this->yaw = yaw;
+        this->pitch = pitch;
+        this->position = glm::vec3(0.0f, 0.36f, 0.31f);
+        this->updateCameraVectors();
+    }
+    
+    
     void FPP(){
         this->yaw = 90.0f;
         this->pitch = -25.25;
