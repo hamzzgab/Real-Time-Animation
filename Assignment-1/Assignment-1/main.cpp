@@ -660,6 +660,7 @@ void ImGuiInit() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(IMGUI_GLSL_VERSION);
 }
+
 void ImGuiWindowing() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
