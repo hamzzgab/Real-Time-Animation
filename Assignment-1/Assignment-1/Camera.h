@@ -99,7 +99,10 @@ public:
     {
         
     }
-    
+    void setPosition(glm::vec3 position) {
+        this->position = position;
+        this->updateCameraVectors();
+    }
     void GetVals(GLfloat yaw, GLfloat pitch, glm::vec3 position){
         this->yaw = yaw;
         this->pitch = pitch;

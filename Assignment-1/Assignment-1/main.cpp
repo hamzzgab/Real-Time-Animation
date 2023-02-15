@@ -72,24 +72,25 @@ GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
 GLfloat movementSpeed = 0.5f;
-glm::vec3 QuaternionAxis = glm::vec3(0.0f, 0.0f, 0.0f);
 
 glm::mat4 PlaneModel     = glm::mat4(1.0f);
 glm::mat4 PropellerModel = glm::mat4(1.0f);
+glm::mat4 CameraModel    = glm::mat4(1.0f);
+bool camera_fpp = false;
+
 glm::mat4 YawModel       = glm::mat4(1.0f);
-glm::mat4 PitchModel = glm::mat4(1.0f);
-glm::mat4 RollModel = glm::mat4(1.0f);
+glm::mat4 PitchModel     = glm::mat4(1.0f);
+glm::mat4 RollModel      = glm::mat4(1.0f);
+glm::mat4 PlanePitch     = glm::mat4(1.0f);
+glm::mat4 PlaneYaw       = glm::mat4(1.0f);
+glm::mat4 PlaneRoll      = glm::mat4(1.0f);
 
-glm::mat4 PlanePitch = glm::mat4(1.0f);
-glm::mat4 PlaneYaw = glm::mat4(1.0f);
-glm::mat4 PlaneRoll = glm::mat4(1.0f);
-
-glm::mat4 planeMatrix = glm::mat4(1.0f);
-
-glm::quat planeOGQuat = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+glm::mat4 planeMatrix    = glm::mat4(1.0f);
+glm::quat planeOGQuat    = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+glm::vec3 QuaternionAxis = glm::vec3(0.0f, 0.0f, 0.0f);
 
 bool quaternion_set = false;
-bool euler_set = true;
+bool euler_set      = true;
 
 void blinnPhongLighting(Shader shader){
     GLint lightDirLoc = glGetUniformLocation( shader.Program, "light.direction" );
@@ -120,7 +121,7 @@ int main( )
     glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
     
     // Create a GLFWwindow object that we can use for GLFW's functions
-    window = glfwCreateWindow( WIDTH, HEIGHT, "Reflectance Models", nullptr, nullptr );
+    window = glfwCreateWindow( WIDTH, HEIGHT, "Quaternion Rotations", nullptr, nullptr );
     
     if ( nullptr == window )
     {
@@ -281,11 +282,13 @@ int main( )
         
         glm::mat4 view = camera.GetViewMatrix( );
         
-        glm::mat4 PlaneModel = glm::mat4(1.0f);
+        glm::mat4 PlaneModel     = glm::mat4(1.0f);
         glm::mat4 PropellerModel = glm::mat4(1.0f);
-        glm::mat4 YawModel = glm::mat4(1.0f);
-        glm::mat4 PitchModel = glm::mat4(1.0f);
-        glm::mat4 RollModel = glm::mat4(1.0f);
+        glm::mat4 CameraModel    = glm::mat4(1.0f);
+        
+        glm::mat4 YawModel       = glm::mat4(1.0f);
+        glm::mat4 PitchModel     = glm::mat4(1.0f);
+        glm::mat4 RollModel      = glm::mat4(1.0f);
         
         blinnPhongShader.Use( );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
@@ -324,6 +327,12 @@ int main( )
         PropellerModel = glm::translate( PropellerModel, glm::vec3( 0.0f, 0.0f, 3.6f ) );
         PropellerModel = PlaneModel * PropellerModel;
         PropellerModel = glm::rotate(PropellerModel, (GLfloat)glfwGetTime()*100.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+        
+        CameraModel = glm::mat4(1.0f);
+        CameraModel = glm::translate(CameraModel, glm::vec3(0.0f, 1.0f, 3.0f));
+//        CameraModel = glm::rotate(CameraModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        CameraModel = PlaneModel * CameraModel;
+        glm::vec3 cam_position = glm::vec3(CameraModel[3][0], CameraModel[3][1], CameraModel[3][2]);
         
         if (gridOn)
         {
@@ -411,6 +420,10 @@ int main( )
             text.RenderText(textShader, "Quaternion Rotations", 255.0f, 550.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 0.0f));
         }
         
+        if(camera_fpp) {
+            camera.setPosition(cam_position);
+        }
+        
         text.RenderText(textShader, "Y - Yaw", 10.0f, 80.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 1.0f));
         text.RenderText(textShader, "P - Pitch", 10.0f, 50.0f, textSizePitch, glm::vec3(0.0f, 1.0f, 0.0f));
         text.RenderText(textShader, "R - Roll", 10.0f, 20.0f, textSizeRoll, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -427,7 +440,7 @@ int main( )
         glBindVertexArray( 0 );
         glDepthFunc( GL_LESS );
         
-        ImGuiWindowing();
+//        ImGuiWindowing();
         // Swap the buffers
         glfwSwapBuffers( window );
     }
@@ -557,15 +570,19 @@ void DoMovement( )
         QuaternionAxis.x = 0.0f;
         QuaternionAxis.y = 0.0f;
         QuaternionAxis.z = 0.0f;
+        
+        planeOGQuat = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
     }
     
     if ( keys[GLFW_KEY_F] )
     {
-        camera.FPP();
+        camera_fpp = true;
+        //camera.FPP();
     }
     
     if ( keys[GLFW_KEY_T] )
     {
+        camera_fpp = false;
         camera.TPP();
     }
     
@@ -608,56 +625,6 @@ void KeyCallback( GLFWwindow *window, int key, int scancode, int action, int mod
             euler_set = false;
             quaternion_set = true;
         }
-        
-        /*
-        if ( keys [GLFW_KEY_Z] )
-        {
-            QuaternionAxis.x += 30 * deltaTime;
-            yawPress = false;
-            pitchPress = true;
-            rollPress = false;
-        }
-        
-        if ( keys [GLFW_KEY_X] )
-        {
-            QuaternionAxis.y += 30 * deltaTime;
-            yawPress = true;
-            pitchPress = false;
-            rollPress = false;
-        }
-        
-        if ( keys [GLFW_KEY_C] )
-        {
-            QuaternionAxis.z += 30 * deltaTime;
-            yawPress = false;
-            pitchPress = false;
-            rollPress = true;
-        }
-
-        if ( keys [GLFW_KEY_V] )
-        {
-            QuaternionAxis.x -= 30 * deltaTime;
-            yawPress = false;
-            pitchPress = true;
-            rollPress = false;
-        }
-        
-        if ( keys [GLFW_KEY_B] )
-        {
-            QuaternionAxis.y -= 30 * deltaTime;
-            yawPress = true;
-            pitchPress = false;
-            rollPress = false;
-        }
-        
-        if ( keys [GLFW_KEY_N] )
-        {
-            QuaternionAxis.z -= 30 * deltaTime;
-            yawPress = false;
-            pitchPress = false;
-            rollPress = true;
-        }
-         */
     }
 }
 
