@@ -16,5 +16,7 @@ The video demonstration for the assignment can be found on [YouTube](https://www
 ## References
 
 [1] Learn OpenGL - https://learnopengl.com/
+  
 [2] OpenGL - Tutorial - http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-17-quaternions/
+
 [3] Quaternions and Spatial Rotations - https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation#References
