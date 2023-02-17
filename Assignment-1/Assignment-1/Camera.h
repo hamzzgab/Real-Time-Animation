@@ -94,6 +94,9 @@ public:
         
         this->updateCameraVectors( );
     }
+    void setYaw(float yaw) {
+        this->yaw = yaw;
+    }
     
     void ProcessMouseScroll( GLfloat yOffset )
     {
@@ -101,6 +104,7 @@ public:
     }
     void setPosition(glm::vec3 position) {
         this->position = position;
+        
         this->updateCameraVectors();
     }
     void GetVals(GLfloat yaw, GLfloat pitch, glm::vec3 position){

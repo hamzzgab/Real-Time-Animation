@@ -577,6 +577,7 @@ void DoMovement( )
     if ( keys[GLFW_KEY_F] )
     {
         camera_fpp = true;
+        camera.setYaw(90.0f);
         //camera.FPP();
     }
     
