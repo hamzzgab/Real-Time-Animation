@@ -1,18 +1,14 @@
 # Assignment - 2
 
 ## ToDo
-[x] Animation** of your simple creature using: (6 marks)
-
-    [x] forward kinematics, and
-
-    [x] IK with one of the following: Analytical solution, CCD, FABRIK or Jacobian
+- [x] Animation** of your simple creature using: (6 marks)
+    - [x] forward kinematics, and
+    - [x] IK with one of the following: Analytical solution, CCD, FABRIK or Jacobian
 
 
-[x] Animation of your complex creature using: (14 marks)
-
-    [x] forward kinematics, and
-
-    [x] IK with one of the following: CCD, FABRIK or Jacobian 
+- [x] Animation of your complex creature using: (14 marks)
+    - [x] forward kinematics, and
+    - [x] IK with one of the following: CCD, FABRIK or Jacobian 
 
 
 **Animation** details for both creatures:
