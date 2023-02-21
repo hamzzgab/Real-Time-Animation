@@ -14,7 +14,6 @@
 #include "Model.h"
 #include "Text.h"
 #include "Texture.h"
-#include "maths_funcs.h"
 
 // GLM Mathemtics
 #include <glm/glm.hpp>
