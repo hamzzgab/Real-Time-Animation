@@ -1,2 +1,3 @@
 *.obj
 *.mtl
+.DS_STORE
