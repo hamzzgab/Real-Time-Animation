@@ -1460,6 +1460,7 @@
 		2AECCA4229A4DDFD0053E016 /* imstb_rectpack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = imstb_rectpack.h; sourceTree = "<group>"; };
 		2AECCA4329A4DDFD0053E016 /* imgui_demo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_demo.cpp; sourceTree = "<group>"; };
 		2AECCA4429A4DDFD0053E016 /* imgui_draw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = imgui_draw.cpp; sourceTree = "<group>"; };
+		2AECCA4D29A4DF320053E016 /* README.md */ = {isa = PBXFileReference; explicitFileType = net.daringfireball.markdown; fileEncoding = 4; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1490,6 +1491,7 @@
 				2AECCA3529A4DDAA0053E016 /* Shader.h */,
 				2AECCA3629A4DDAA0053E016 /* Text.h */,
 				2AECCA3729A4DDAA0053E016 /* Texture.h */,
+				2AECCA4D29A4DF320053E016 /* README.md */,
 				2AECC47B29A4DBB30053E016 /* Products */,
 				2AECC48429A4DBDC0053E016 /* Frameworks */,
 			);
