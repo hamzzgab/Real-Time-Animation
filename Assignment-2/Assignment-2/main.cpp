@@ -70,26 +70,9 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-GLfloat movementSpeed = 0.5f;
+GLfloat movementSpeed = 0.075f;
+glm::vec3 BallMovement = glm::vec3(0.0f, 0.0f, 0.0f);
 
-glm::mat4 PlaneModel     = glm::mat4(1.0f);
-glm::mat4 PropellerModel = glm::mat4(1.0f);
-glm::mat4 CameraModel    = glm::mat4(1.0f);
-bool camera_fpp = false;
-
-glm::mat4 YawModel       = glm::mat4(1.0f);
-glm::mat4 PitchModel     = glm::mat4(1.0f);
-glm::mat4 RollModel      = glm::mat4(1.0f);
-glm::mat4 PlanePitch     = glm::mat4(1.0f);
-glm::mat4 PlaneYaw       = glm::mat4(1.0f);
-glm::mat4 PlaneRoll      = glm::mat4(1.0f);
-
-glm::mat4 planeMatrix    = glm::mat4(1.0f);
-glm::quat planeOGQuat    = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
-glm::vec3 QuaternionAxis = glm::vec3(0.0f, 0.0f, 0.0f);
-
-bool quaternion_set = false;
-bool euler_set      = true;
 
 void blinnPhongLighting(Shader shader){
     GLint lightDirLoc = glGetUniformLocation( shader.Program, "light.direction" );
@@ -158,9 +141,7 @@ int main( )
     Shader blinnPhongShader( "res/shaders/blinnPhongVS.vs", "res/shaders/blinnPhongFS.frag" );
     
     // MODELS
-    Model Plane( "res/models/plane.obj" );
-    Model Propeller( "res/models/propeller.obj" );
-    Model Circle( "res/models/Circle.obj" );
+    Model Ball( "res/models/Ball.obj" );
 
     // SKYBOX
     Shader skyboxShader( "res/shaders/skybox.vs", "res/shaders/skybox.frag" );
@@ -255,17 +236,6 @@ int main( )
     // Game loop
     while( !glfwWindowShouldClose( window ) )
     {
-        yawPress = false;
-        pitchPress = false;
-        rollPress = false;
-        
-        GLfloat textSizeYaw = 0.5f;
-        GLfloat textSizePitch = 0.5f;
-        GLfloat textSizeRoll = 0.5f;
-        
-        GLfloat amtIncr = 0.1f;
-        GLfloat scaleGrid = 0.5f;
-
         // Set frame time
         GLfloat currentFrame = glfwGetTime( );
         deltaTime = currentFrame - lastFrame;
@@ -280,152 +250,19 @@ int main( )
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         
         glm::mat4 view = camera.GetViewMatrix( );
-        
-        glm::mat4 PlaneModel     = glm::mat4(1.0f);
-        glm::mat4 PropellerModel = glm::mat4(1.0f);
-        glm::mat4 CameraModel    = glm::mat4(1.0f);
-        
-        glm::mat4 YawModel       = glm::mat4(1.0f);
-        glm::mat4 PitchModel     = glm::mat4(1.0f);
-        glm::mat4 RollModel      = glm::mat4(1.0f);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::scale(model, glm::vec3(0.1f));
+        model = glm::translate(model, BallMovement);
         
         blinnPhongShader.Use( );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
         glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
-        
-        /*
-        PITCH  - X
-        YAW    - Y
-        ROTATE - Z
-        */
-        
-        PlaneModel = glm::mat4(1.0f);
-        PlaneModel = glm::scale(PlaneModel, glm::vec3(0.2));
-        
-        glm::mat4 rotationMatrix = glm::toMat4(planeOGQuat);
-
-        if (quaternion_set)
-        {
-            PlaneModel = PlaneModel * rotationMatrix;
-            gridOn = false;
-        }
-        
-        if ( euler_set )
-        {
-            PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.y), glm::vec3(0.0f, 1.0f, 0.0f));
-            PlaneYaw = PlaneModel;
-            
-            PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.z), glm::vec3(0.0f, 0.0f, 1.0f));
-            PlaneRoll = PlaneModel;
-            
-            PlaneModel = glm::rotate(PlaneModel, glm::radians(RotationAxis.x), glm::vec3(1.0f, 0.0f, 0.0f));
-            PlanePitch = PlaneModel;
-        }
-
-        PropellerModel = glm::mat4(1.0f);
-        PropellerModel = glm::translate( PropellerModel, glm::vec3( 0.0f, 0.0f, 3.6f ) );
-        PropellerModel = PlaneModel * PropellerModel;
-        PropellerModel = glm::rotate(PropellerModel, (GLfloat)glfwGetTime()*100.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-        
-        CameraModel = glm::mat4(1.0f);
-        CameraModel = glm::translate(CameraModel, glm::vec3(0.0f, 1.0f, 3.0f));
-//        CameraModel = glm::rotate(CameraModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        CameraModel = PlaneModel * CameraModel;
-        glm::vec3 cam_position = glm::vec3(CameraModel[3][0], CameraModel[3][1], CameraModel[3][2]);
-        
-        if (gridOn)
-        {
-            
-            if ( euler_set )
-            {
-                scaleGrid = 0.5f;
-            }
-            else if ( quaternion_set )
-            {
-                scaleGrid = 0.1f;
-            }
-            
-            YawModel *= PlaneYaw;
-            YawModel = glm::scale(YawModel, glm::vec3(scaleGrid));
-            YawModel = glm::rotate(YawModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            
-            PitchModel *= PlanePitch;
-            PitchModel = glm::scale(PitchModel, glm::vec3(scaleGrid));
-            
-            RollModel *= PlaneRoll;
-            RollModel = glm::scale(RollModel, glm::vec3(scaleGrid));
-            RollModel = glm::rotate(RollModel, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-            
-            glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( YawModel ) );
-            Circle.Draw( blinnPhongShader );
-            
-            if (yawPress){
-                glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 1.0f );
-                textSizeYaw += amtIncr;
-            }else{
-                glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 0.0f, 1.0f, 0.3f );
-            }
-            
-            glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PitchModel ) );
-            Circle.Draw( blinnPhongShader );
-            
-            if (pitchPress){
-                glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 1.0f, 0.0f, 1.0f );
-                textSizePitch += amtIncr;
-            }else{
-                glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 0.0f, 1.0f, 0.0f, 0.3f );
-            }
-            
-            glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 0 );
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( RollModel ) );
-            Circle.Draw( blinnPhongShader );
-            
-            if (rollPress){
-                glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 1.0f );
-                textSizeRoll += amtIncr;
-            }else{
-                glUniform4f( glGetUniformLocation( blinnPhongShader.Program, "colorIt" ), 1.0f, 0.0f, 0.0f, 0.3f );
-            }
-        }else{
-            if (yawPress){
-                textSizeYaw += amtIncr;
-            }
-            if (pitchPress){
-                textSizePitch += amtIncr;
-            }
-            if (rollPress){
-                textSizeRoll += amtIncr;
-            }
-        }
-
         glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
-        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PropellerModel ) );
-        Propeller.Draw( blinnPhongShader );
-        
-        glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
-        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( PlaneModel ) );
-        Plane.Draw( blinnPhongShader );
-        
+        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( model ) );
+        Ball.Draw( blinnPhongShader );
         blinnPhongLighting( blinnPhongShader );
         
-        if ( euler_set )
-        {
-            text.RenderText(textShader, "Euler Rotations", 325.0f, 550.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 0.0f));
-        }
-        else if ( quaternion_set )
-        {
-            text.RenderText(textShader, "Quaternion Rotations", 255.0f, 550.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 0.0f));
-        }
-        
-        if(camera_fpp) {
-            camera.setPosition(cam_position);
-        }
-        
-        text.RenderText(textShader, "Y - Yaw", 10.0f, 80.0f, textSizeYaw, glm::vec3(0.0f, 0.0f, 1.0f));
-        text.RenderText(textShader, "P - Pitch", 10.0f, 50.0f, textSizePitch, glm::vec3(0.0f, 1.0f, 0.0f));
-        text.RenderText(textShader, "R - Roll", 10.0f, 20.0f, textSizeRoll, glm::vec3(1.0f, 0.0f, 0.0f));
+        text.RenderText(textShader, "", 0.0f, 0.0f, 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
         
         // Draw skybox as last
         glDepthFunc( GL_LEQUAL );
@@ -473,120 +310,25 @@ void DoMovement( )
         camera.ProcessKeyboard( RIGHT, deltaTime );
     }
     
-    /*
-    PITCH  - X
-    YAW    - Y
-    ROTATE - Z
-    */
-    
-    // YAW
-    if ( keys[GLFW_KEY_Y] ||  keys[GLFW_KEY_D])
-    {
-        RotationAxis.y += movementSpeed;
-        
-        QuaternionAxis.y += movementSpeed;
-        glm::quat quatY = glm::quat(glm::cos(glm::radians(movementSpeed / 2.0f)), glm::vec3(0.0f, 1.0f, 0.0f) * glm::sin(glm::radians(movementSpeed) / 2.0f));
-        planeOGQuat = planeOGQuat * quatY;
-        
-        yawPress = true;
-        pitchPress = false;
-        rollPress = false;
-    }
-    
-    if ( keys[GLFW_KEY_A])
-    {
-        RotationAxis.y -= movementSpeed;
-        
-        QuaternionAxis.y -= movementSpeed;
-        glm::quat quatY = glm::quat(glm::cos(glm::radians(-movementSpeed / 2.0f)), glm::vec3(0.0f, 1.0f, 0.0f) * glm::sin(glm::radians(-movementSpeed) / 2.0f));
-        planeOGQuat = planeOGQuat * quatY;
-        
-        yawPress = true;
-        pitchPress = false;
-        rollPress = false;
-    }
-    
-    // PITCH
-    if ( keys[GLFW_KEY_P] || keys[GLFW_KEY_S] )
-    {
-        RotationAxis.x += movementSpeed;
-        
-        QuaternionAxis.x += 20.0f;
-        glm::quat quatX = glm::quat(glm::cos(glm::radians(movementSpeed / 2.0f)), glm::vec3(1.0f, 0.0f, 0.0f) * glm::sin(glm::radians(movementSpeed) / 2.0f));
-        planeOGQuat = planeOGQuat * quatX;
-        
-        yawPress = false;
-        pitchPress = true;
-        rollPress = false;
-    }
-    
     if ( keys[GLFW_KEY_W] )
     {
-        RotationAxis.x -= movementSpeed;
-        
-        QuaternionAxis.x -= movementSpeed;
-        glm::quat quatX = glm::quat(glm::cos(glm::radians(-movementSpeed / 2.0f)), glm::vec3(1.0f, 0.0f, 0.0f) * glm::sin(glm::radians(-movementSpeed) / 2.0f));
-        planeOGQuat = planeOGQuat * quatX;
-        
-        yawPress = false;
-        pitchPress = true;
-        rollPress = false;
+        BallMovement.y += movementSpeed;
     }
 
-    // ROLL
-    if ( keys[GLFW_KEY_R] ||  keys[GLFW_KEY_Q])
+    if ( keys[GLFW_KEY_A])
     {
-        RotationAxis.z += movementSpeed;
-        
-        QuaternionAxis.z += movementSpeed;
-        glm::quat quatZ = glm::quat(glm::cos(glm::radians(movementSpeed / 2.0f)), glm::vec3(0.0f, 0.0f, 1.0f) * glm::sin(glm::radians(movementSpeed) / 2.0f));
-        planeOGQuat = planeOGQuat * quatZ;
-        
-        yawPress = false;
-        pitchPress = false;
-        rollPress = true;
-    }
-    
-    if ( keys[GLFW_KEY_E])
-    {
-        RotationAxis.z -= movementSpeed;
-        
-        QuaternionAxis.z += movementSpeed;
-        glm::quat quatZ = glm::quat(glm::cos(glm::radians(-movementSpeed / 2.0f)), glm::vec3(0.0f, 0.0f, 1.0f) * glm::sin(glm::radians(-movementSpeed) / 2.0f));
-        planeOGQuat = planeOGQuat * quatZ;
-        
-        yawPress = false;
-        pitchPress = false;
-        rollPress = true;
+        BallMovement.x -= movementSpeed;
     }
 
-    if ( keys[GLFW_KEY_O] )
+    if ( keys[GLFW_KEY_S] )
     {
-        RotationAxis.x = 0.0f;
-        RotationAxis.y = 0.0f;
-        RotationAxis.z = 0.0f;
-        
-        QuaternionAxis.x = 0.0f;
-        QuaternionAxis.y = 0.0f;
-        QuaternionAxis.z = 0.0f;
-        
-        planeOGQuat = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+        BallMovement.y -= movementSpeed;
     }
-    
-    if ( keys[GLFW_KEY_F] )
+
+    if ( keys[GLFW_KEY_D] )
     {
-        camera_fpp = true;
-        camera.setYaw(90.0f);
-        //camera.FPP();
+        BallMovement.x += movementSpeed;
     }
-    
-    if ( keys[GLFW_KEY_T] )
-    {
-        camera_fpp = false;
-        camera.TPP();
-    }
-    
-    
 }
 
 void KeyCallback( GLFWwindow *window, int key, int scancode, int action, int mode )
@@ -612,18 +354,6 @@ void KeyCallback( GLFWwindow *window, int key, int scancode, int action, int mod
         if ( keys[GLFW_KEY_G] )
         {
             gridOn = !gridOn;
-        }
-        
-        if ( keys[GLFW_KEY_1] )
-        {
-            euler_set = true;
-            quaternion_set = false;
-        }
-        
-        if ( keys[GLFW_KEY_2] )
-        {
-            euler_set = false;
-            quaternion_set = true;
         }
     }
 }
@@ -667,20 +397,6 @@ void ImGuiWindowing() {
     ImGui::NewFrame();
     ImGui::Begin("ImGui Debugger");
     if (ImGui::CollapsingHeader("Global Light")) {
-        if (ImGui::TreeNode("Rotation")) {
-            if (ImGui::BeginTable("ColorAttributes_1", 1))
-            {
-                ImGui::TableNextColumn();
-                ImGui::InputFloat("Pitch Degree", &QuaternionAxis.x);
-                ImGui::TableNextColumn();
-                ImGui::InputFloat("Yaw Degree", &QuaternionAxis.y);
-                ImGui::TableNextColumn();
-                ImGui::InputFloat("Roll Degree", &QuaternionAxis.z);
-                ImGui::EndTable();
-            }
-            ImGui::TreePop();
-        }
-        
         if (ImGui::TreeNode("Camera")) {
             if (ImGui::BeginTable("ColorAttributes_1", 1))
             {

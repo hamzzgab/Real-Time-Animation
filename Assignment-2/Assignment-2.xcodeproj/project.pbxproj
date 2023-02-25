@@ -1484,8 +1484,8 @@
 			isa = PBXGroup;
 			children = (
 				2AECC47C29A4DBB30053E016 /* Assignment-2 */,
-				2AECCA3129A4DDAA0053E016 /* Camera.h */,
 				2AECCA3429A4DDAA0053E016 /* main.cpp */,
+				2AECCA3129A4DDAA0053E016 /* Camera.h */,
 				2AECCA3229A4DDAA0053E016 /* Mesh.h */,
 				2AECCA3329A4DDAA0053E016 /* Model.h */,
 				2AECCA3529A4DDAA0053E016 /* Shader.h */,
