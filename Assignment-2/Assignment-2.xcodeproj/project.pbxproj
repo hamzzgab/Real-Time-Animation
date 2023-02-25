@@ -7,17 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2AECC48629A4DBDC0053E016 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48529A4DBDC0053E016 /* OpenGL.framework */; };
-		2AECC48829A4DBEF0053E016 /* libassimp.5.2.4.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48729A4DBEF0053E016 /* libassimp.5.2.4.dylib */; };
-		2AECC48929A4DBEF0053E016 /* libassimp.5.2.4.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 2AECC48729A4DBEF0053E016 /* libassimp.5.2.4.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		2AECC48C29A4DC010053E016 /* libglut.3.11.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48B29A4DC010053E016 /* libglut.3.11.1.dylib */; };
-		2AECC48D29A4DC010053E016 /* libglut.3.11.1.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 2AECC48B29A4DC010053E016 /* libglut.3.11.1.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		2AECC48F29A4DC0D0053E016 /* libfreetype.6.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48E29A4DC0C0053E016 /* libfreetype.6.dylib */; };
-		2AECC49029A4DC0D0053E016 /* libfreetype.6.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 2AECC48E29A4DC0C0053E016 /* libfreetype.6.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		2AECC49229A4DC1A0053E016 /* libGLEW.2.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC49129A4DC1A0053E016 /* libGLEW.2.2.0.dylib */; };
-		2AECC49329A4DC1A0053E016 /* libGLEW.2.2.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 2AECC49129A4DC1A0053E016 /* libGLEW.2.2.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		2AECC49529A4DC240053E016 /* libglfw.3.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC49429A4DC240053E016 /* libglfw.3.3.dylib */; };
-		2AECC49629A4DC240053E016 /* libglfw.3.3.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 2AECC49429A4DC240053E016 /* libglfw.3.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		2A78E43229AA65E800DA3C2D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48529A4DBDC0053E016 /* OpenGL.framework */; };
+		2A78E43329AA65F600DA3C2D /* libfreetype.6.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48E29A4DC0C0053E016 /* libfreetype.6.dylib */; };
+		2A78E43429AA660400DA3C2D /* libassimp.5.2.4.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48729A4DBEF0053E016 /* libassimp.5.2.4.dylib */; };
+		2A78E43529AA661000DA3C2D /* libglut.3.11.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC48B29A4DC010053E016 /* libglut.3.11.1.dylib */; };
+		2A78E43629AA662300DA3C2D /* libglfw.3.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC49429A4DC240053E016 /* libglfw.3.3.dylib */; };
+		2A78E43729AA662D00DA3C2D /* libGLEW.2.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AECC49129A4DC1A0053E016 /* libGLEW.2.2.0.dylib */; };
 		2AECCA2D29A4DD920053E016 /* image_helper.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AECCA1929A4DD920053E016 /* image_helper.c */; };
 		2AECCA2E29A4DD920053E016 /* image_DXT.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AECCA1C29A4DD920053E016 /* image_DXT.c */; };
 		2AECCA2F29A4DD920053E016 /* SOIL2.c in Sources */ = {isa = PBXBuildFile; fileRef = 2AECCA1E29A4DD920053E016 /* SOIL2.c */; };
@@ -49,11 +44,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				2AECC49029A4DC0D0053E016 /* libfreetype.6.dylib in Embed Libraries */,
-				2AECC49329A4DC1A0053E016 /* libGLEW.2.2.0.dylib in Embed Libraries */,
-				2AECC48929A4DBEF0053E016 /* libassimp.5.2.4.dylib in Embed Libraries */,
-				2AECC49629A4DC240053E016 /* libglfw.3.3.dylib in Embed Libraries */,
-				2AECC48D29A4DC010053E016 /* libglut.3.11.1.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1468,12 +1458,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2AECC49529A4DC240053E016 /* libglfw.3.3.dylib in Frameworks */,
-				2AECC49229A4DC1A0053E016 /* libGLEW.2.2.0.dylib in Frameworks */,
-				2AECC48F29A4DC0D0053E016 /* libfreetype.6.dylib in Frameworks */,
-				2AECC48829A4DBEF0053E016 /* libassimp.5.2.4.dylib in Frameworks */,
-				2AECC48C29A4DC010053E016 /* libglut.3.11.1.dylib in Frameworks */,
-				2AECC48629A4DBDC0053E016 /* OpenGL.framework in Frameworks */,
+				2A78E43729AA662D00DA3C2D /* libGLEW.2.2.0.dylib in Frameworks */,
+				2A78E43629AA662300DA3C2D /* libglfw.3.3.dylib in Frameworks */,
+				2A78E43529AA661000DA3C2D /* libglut.3.11.1.dylib in Frameworks */,
+				2A78E43429AA660400DA3C2D /* libassimp.5.2.4.dylib in Frameworks */,
+				2A78E43329AA65F600DA3C2D /* libfreetype.6.dylib in Frameworks */,
+				2A78E43229AA65E800DA3C2D /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
