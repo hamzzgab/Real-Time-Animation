@@ -1,18 +1,22 @@
 # Assignment - 2
 
-## ToDo
-- [ ] Animation** of your simple creature using: (6 marks)
-    - [ ] forward kinematics, and
-    - [ ] IK with one of the following: Analytical solution, CCD, FABRIK or Jacobian
+## About
 
+This is the second assignment for Real-Time Animation (CS7GV5) at Trinity College Dublin. I have implemented Forward and Inverse Kinematics for both Simple and Complex Objects using Analytical and Numerical Methods. For the Numerical method I have implemented the Cyclic Coordinate Descent method referenced from [1].
 
-- [ ] Animation of your complex creature using: (14 marks)
-    - [ ] forward kinematics, and
-    - [ ] IK with one of the following: CCD, FABRIK or Jacobian 
+## Demonstration
 
+The video demonstration for the assignment can be found on [YouTube](https://www.youtube.com/watch?v=L-8GdIWd8g4)
+<p align='center'>
+  <a href="http://www.youtube.com/watch?feature=player_embedded&v=jSgi0pM5SgQ" target="_blank">
+      <img src="http://img.youtube.com/vi/jSgi0pM5SgQ/0.jpg" alt="Assignment-2 Real Time Animation" width="240" height="180" border="10" />
+  </a>
+<p>
 
-**Animation** details for both creatures:
-• For forward kinematics, any kind of hierarchical motion is acceptable;
-• For basic IK, e.g., reaching for a point that you move around on the screen;
-• For advanced IK, e.g., scripting the motion of end effectors using splines or similar.
-• Extra marks for quality of animation, natural movements, complexity of model, etc.
+## References
+
+[1] Making King More Flexible - http://graphics.cs.cmu.edu/nsp/course/15-464/Spring07/assignments/jlander_gamedev_nov98.pdf
+    
+[2] Oh My God, I Inverted Kine! - http://graphics.cs.cmu.edu/nsp/course/15-464/Spring07/assignments/jlander_gamedev_sept98.pdf
+    
+[2] Cyclic Coordinate Descent in 2D - https://www.ryanjuckett.com/cyclic-coordinate-descent-in-2d/
