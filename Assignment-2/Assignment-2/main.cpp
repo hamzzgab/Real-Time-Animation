@@ -42,8 +42,8 @@
 
 
 //------------SCREEN PROPERTIES---------------------------------------
-//const GLuint WIDTH = 1600, HEIGHT = 1000;
-const GLuint WIDTH = 800, HEIGHT = 800;
+const GLuint WIDTH = 1600, HEIGHT = 1000;
+//const GLuint WIDTH = 800, HEIGHT = 800;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 //--------------------------------------------------------------------
 
@@ -78,12 +78,21 @@ float upperArmAngle;
 float lowerArmAngle;
 int armLengthL1 = 2;
 int armLengthL2 = 2;
+bool forwardKinematics = false;
+GLfloat forwardRotDegUpper1 = 0.0f;
+GLfloat forwardRotDegLower1 = 0.0f;
+
+GLfloat forwardRotDegUpper2 = 0.0f;
+GLfloat forwardRotDegLower2 = 0.0f;
+
+GLfloat forwardRotDegHand1  = 0.0f;
+GLfloat forwardRotDegHand2  = 0.0f;
 //--------------------------------------------------------------------
 
 //------------CCD VARIABLES-------------------------------------------
 int EFFECTOR_POS      = 3;
 GLfloat IK_POS_THRESH = 1.0f;
-bool m_Damping        = true;
+bool m_Damping        = false;
 bool m_DOF_Restrict   = false;
 int MAX_IK_TRIES      = 100;
 
@@ -104,39 +113,25 @@ bool SetAnalytical = true;
 bool SetNumerical = false;
 
 void setUpLinks() {
-    quatRotations[0] = glm::quat(1.0f, glm::vec3(0.0f));
-    quatRotations[1] = glm::quat(1.0f, glm::vec3(0.0f));
-    quatRotations[2] = glm::quat(1.0f, glm::vec3(0.0f));
     links[0] = glm::vec3(0.0f, 0.0f, 0.0f);
     links[1] = glm::vec3(2.0f, 0.0f, 0.0f);
     links[2] = glm::vec3(4.0f, 0.0f, 0.0f);
-//    links[3] = glm::vec3(6.0f, 0.0f, 0.0f);
-//    links[4] = glm::vec3(8.0f, 0.0f, 0.0f);
     
     linksDampWidth[0] = 30.0f;
     linksDampWidth[1] = 30.0f;
     linksDampWidth[2] = 30.0f;
-//    linksDampWidth[3] = 360.0f;
-//    linksDampWidth[4] = 360.0f;
     
+    linksDOFRestrictionsMin[0] = -50;
+    linksDOFRestrictionsMin[1] = -50;
+    linksDOFRestrictionsMin[2] = -50;
     
-    linksDOFRestrictionsMin[0] = 0;
-    linksDOFRestrictionsMin[1] = 0;
-    linksDOFRestrictionsMin[2] = 0;
-//    linksDOFRestrictionsMin[3] = -30;
-//    linksDOFRestrictionsMin[4] = -30;
-    
-    linksDOFRestrictionsMax[0] = 120;
-    linksDOFRestrictionsMax[1] = 120;
-    linksDOFRestrictionsMax[2] = 120;
-//    linksDOFRestrictionsMax[3] = 30;
-//    linksDOFRestrictionsMax[4] = 30;
+    linksDOFRestrictionsMax[0] = 50;
+    linksDOFRestrictionsMax[1] = 50;
+    linksDOFRestrictionsMax[2] = 50;
     
     linkTurnAngles[0] = 0.0f;
     linkTurnAngles[1] = 0.0f;
     linkTurnAngles[2] = 0.0f;
-//    linkTurnAngles[3] = 0.0f;
-//    linkTurnAngles[4] = 0.0f;
 }
 
 //--------------------------------------------------------------------
@@ -199,90 +194,9 @@ void ComputeAnalyticalLink(float x, float y) {
     
 }
 
-//--------------------JACOBIAN CALCULATION----------------------------
-
-
-//--------------------FOR CCD CALCULATION-----------------------------
-double VectorSquaredDistance(glm::vec3 *v1, glm::vec3 *v2)
-{
-    return (
-            ((v1->x - v2->x) * (v1->x - v2->x)) +
-            ((v1->y - v2->y) * (v1->y - v2->y)) +
-            ((v1->z - v2->z) * (v1->z - v2->z))
-            );
-}
-
-
-double VectorSquaredLength(glm::vec3 *v)
-{
-    return (
-            (v->x * v->x) + (v->y * v->y) + (v->z * v->z)
-            );
-}
-
-double VectorLength(glm::vec3 *v)
-{
-    return sqrt(VectorSquaredLength(v));
-}
-
-void NormalizeVector(glm::vec3 *v)
-{
-    GLfloat len = (GLfloat)VectorLength(v);
-    if (len != 0.0)
-    {
-        v->x /= len;
-        v->y /= len;
-        v->z /= len;
-    }
-}
-
-double DotProduct(glm::vec3 *v1, glm::vec3 *v2)
-{
-    return (
-            (v1->x * v2->x) + (v1->y * v2->y) + (v1->z * v2->z)
-            );
-}
-
-void CrossProduct(glm::vec3 *v1, glm::vec3 *v2, glm::vec3 *result)
-{
-    result->x = (v1->y * v2->z) - (v1->z * v2->y);
-    result->y = (v1->z * v2->x) - (v1->x * v2->z);
-    result->z = (v1->x * v2->y) - (v1->y * v2->x);
-}
 glm::vec3 GetWorldPosition(glm::mat4& transform) {
     return glm::vec3(transform[3][0], transform[3][1], transform[3][2]);
 }
-
-//glm::vec3
-/*
-        Transform 0 - Root Bone
-            |
-            | - Transform 1 - Child Bone 1
-                    | - Transform 2 - Child Bone 2
-                        | - Transform 3 - EndEffectorEnd - For Position purposes
-    for each joint:
-        a = EndEffector.position - joint.position
-        b = Target.position - joint.position
-        cross_prod = glm::cross(b, a);
-        dot_prod = glm::dot(a,b); // order does not matter
-        result_angle = 0.0f;
-        if(cross_prod.z > 0.0f) {
-            // Set positive angle
-            result_angle = glm::degrees(glm::acos(dot_prod));
-            link_angle[link_id] += result_angle;
-        }   else    {
-            // Set negative angle
-            result_angle = glm::degrees(glm::acos(dot_prod));
-            link_angle[link_id] -= result_angle;
-        }
- //Finally set angle
- 0 : Parent
-1 : Child - 1
-2 : Child - 2
- 3 : effector
- */
-
-
 //--------------------------------------------------------------------
 // Procedure: ComputeCCDLink
 // Purpose:   Compute an IK Solution to an end effector position
@@ -303,47 +217,27 @@ void ComputeCCD(glm::vec3 TargetPos)
 
     do
     {
-//        rootPos.x = links[link].x;
-//        rootPos.y = links[link].y;
-//        rootPos.z = links[link].z;
-//
-//        curEnd.x = links[EFFECTOR_POS].x;
-//        curEnd.y = links[EFFECTOR_POS].y;
-//        curEnd.z = links[EFFECTOR_POS].z;
-//
-//        desiredEnd.x = (GLfloat)TargetPos.x;
-//        desiredEnd.y = (GLfloat)TargetPos.y;
-//        desiredEnd.z = (GLfloat)TargetPos.z;
         rootPos = links[link];
-        //curEnd = links[EFFECTOR_POS];
         curEnd = GetWorldPosition(endEffector);
         desiredEnd = TargetPos;
         if (glm::distance(curEnd, desiredEnd) > IK_POS_THRESH)
         {
             shouldDraw = false;
-//            curVector.x = curEnd.x - rootPos.x;
-//            curVector.y = curEnd.y - rootPos.y;
-//            curVector.z = curEnd.z - rootPos.z;
             curVector = curEnd - rootPos;
-//            targetVector.x = TargetPos.x - rootPos.x;
-//            targetVector.y = TargetPos.y - rootPos.y;
-//            targetVector.z = TargetPos.z - rootPos.z;
             targetVector = TargetPos - rootPos;
             
             curVector    = glm::normalize(curVector);
             targetVector = glm::normalize(targetVector);
-//            LookAts[link].direction = targetVector;
-//            LookAts[link].up = glm::vec3(0.0f, 1.0f, 0.0f);
-//            LookAts[link].right = glm::cross(LookAts[link].direction, LookAts[link].up);
-//            LookAts[link].up = glm::cross(LookAts[link].direction, LookAts[link].right);
-            cosAngle = glm::dot(targetVector, curVector);
+            cosAngle     = glm::dot(targetVector, curVector);
             
             if (cosAngle < 0.99999f)
             {
                 crossResult = glm::cross(curVector, targetVector);
                 rotationDirections[link] = crossResult;
-                    turnAngle = glm::acos((GLfloat)cosAngle);
-                    turnDeg = glm::degrees(turnAngle);
+                
+                turnAngle = glm::acos((GLfloat)cosAngle);
+                turnDeg = glm::degrees(turnAngle);
+                
                 if (crossResult.z > 0.0f)
                 {
 
@@ -352,11 +246,11 @@ void ComputeCCD(glm::vec3 TargetPos)
                         turnDeg -= linksDampWidth[link];
                     }
 
-                    linkTurnAngles[link] += (GLfloat)turnDeg;
+                    linkTurnAngles[link] -= (GLfloat)turnDeg;
 
                     if (m_DOF_Restrict && linkTurnAngles[link] < (GLfloat)linksDOFRestrictionsMin[link])
                     {
-                        linkTurnAngles[link] = (GLfloat)linksDOFRestrictionsMin[link];
+                        linkTurnAngles[link] -= (GLfloat)linksDOFRestrictionsMin[link];
                     }
                 }
                 else if (crossResult.z < 0.0f)
@@ -366,14 +260,13 @@ void ComputeCCD(glm::vec3 TargetPos)
                     {
                         turnDeg += linksDampWidth[link];
                     }
-                    linkTurnAngles[link] -= (GLfloat)turnDeg;
+                    linkTurnAngles[link] += (GLfloat)turnDeg;
 
                     if (m_DOF_Restrict && linkTurnAngles[link] > (GLfloat)linksDOFRestrictionsMax[link])
                     {
-                        linkTurnAngles[link] = (GLfloat)linksDOFRestrictionsMax[link];
+                        linkTurnAngles[link] += (GLfloat)linksDOFRestrictionsMax[link];
                     }
                 }
-//                linkTurnAngles[link] = turnDeg;
             }
             if (--link < 0) link = EFFECTOR_POS - 1;
         }
@@ -430,6 +323,7 @@ int main()
     Model Ball( "res/models/Ball.obj" );
     Model Body( "res/models/Body.obj" );
     Model Limb( "res/models/Limb.obj" );
+    Model Face( "res/models/Face.obj" );
     
     // SKYBOX
     Shader skyboxShader( "res/shaders/skybox.vs", "res/shaders/skybox.frag" );
@@ -542,98 +436,184 @@ int main()
         if (SetAnalytical)
         {
             ComputeAnalyticalLink(BallPosition.x, BallPosition.y);
-
+            
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
             glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
+
             
-            glm::mat4 upperArmModel = glm::mat4(1.0f);
-            upperArmModel = glm::rotate(upperArmModel, glm::radians(upperArmAngle), glm::vec3(0.0f, 0.0f, 1.0f));
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
-            Limb.Draw( blinnPhongShader );
+            if (!forwardKinematics)
+            {
+                // UPPER ARM
+                glm::mat4 upperArmModel = glm::mat4(1.0f);
+                upperArmModel = glm::rotate(upperArmModel, glm::radians(upperArmAngle), glm::vec3(0.0f, 0.0f, 1.0f));
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
+                Limb.Draw( blinnPhongShader );
 
-            // Lower Arm
-            glm::mat4 lowerArmModel = glm::mat4(1.0f);
-            lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
-            lowerArmModel = glm::rotate(lowerArmModel, glm::radians(lowerArmAngle), glm::vec3(0.0f, 0.0f, 1.0f));
-            lowerArmModel = upperArmModel * lowerArmModel;
+                // LOWER ARM
+                glm::mat4 lowerArmModel = glm::mat4(1.0f);
+                lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                lowerArmModel = glm::rotate(lowerArmModel, glm::radians(lowerArmAngle), glm::vec3(0.0f, 0.0f, 1.0f));
+                lowerArmModel = upperArmModel * lowerArmModel;
 
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
-            Limb.Draw( blinnPhongShader );
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
+                Limb.Draw( blinnPhongShader );
+            }else{
+                // UPPER ARM
+                glm::mat4 upperArmModel = glm::mat4(1.0f);
+                upperArmModel = glm::rotate(upperArmModel, glm::radians(forwardRotDegUpper1), glm::vec3(0.0f, 0.0f, 1.0f));
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
+                Limb.Draw( blinnPhongShader );
+
+                // LOWER ARM
+                glm::mat4 lowerArmModel = glm::mat4(1.0f);
+                lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                lowerArmModel = glm::rotate(lowerArmModel, glm::radians(forwardRotDegLower1), glm::vec3(0.0f, 0.0f, 1.0f));
+                lowerArmModel = upperArmModel * lowerArmModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
+                Limb.Draw( blinnPhongShader );
+   
+                glm::mat4 upperArmModel2 = glm::mat4(1.0f);
+                upperArmModel2 = glm::translate(upperArmModel2, glm::vec3(-2.0f, 0.0f, 0.0f));
+                upperArmModel2 = glm::rotate(upperArmModel2, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                upperArmModel2 = glm::rotate(upperArmModel2, glm::radians(forwardRotDegUpper2), glm::vec3(0.0f, 0.0f, 1.0f));
+                
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel2 ) );
+                Limb.Draw( blinnPhongShader );
+
+                // LOWER ARM
+                glm::mat4 lowerArmModel2 = glm::mat4(1.0f);
+                lowerArmModel2 = glm::translate(lowerArmModel2, glm::vec3(2.0f, 0.0f, 0.0f));
+                lowerArmModel2 = glm::rotate(lowerArmModel2, glm::radians(forwardRotDegLower2), glm::vec3(0.0f, 0.0f, 1.0f));
+                lowerArmModel2 = upperArmModel2 * lowerArmModel2;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel2 ) );
+                Limb.Draw( blinnPhongShader );
+   
+                
+                // BALL
+                glm::mat4 BallModel = glm::mat4(1.0f);
+                BallModel = glm::translate(BallModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                BallModel = lowerArmModel * BallModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( BallModel ) );
+                Ball.Draw( blinnPhongShader );
+            }
+
         }else if (SetNumerical)
         {
             ComputeCCD(BallPosition);
             
-//            points = DoFabrik(glm::vec3(0.0f), BallPosition, points, lengths);
-            
-            
-            glm::mat4 upperArmModel = glm::mat4(1.0f);
-//            quatRotations[0] = glm::quat(
-//                                                    glm::cos(glm::radians(linkTurnAngles[0] / 2)),
-//                                                    rotationDirections[0] * glm::sin(glm::radians(linkTurnAngles[0] / 2))
-//                                                );
-//            upperArmModel *= glm::toMat4(quatRotations[0]);
-            upperArmModel = glm::rotate(upperArmModel, glm::radians(linkTurnAngles[0]), glm::vec3(0.0f, 0.0f, 1.0f));
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
-            Limb.Draw( blinnPhongShader );
+            if (!forwardKinematics)
+            {
+                // UPPER ARM
+                glm::mat4 upperArmModel = glm::mat4(1.0f);
+                upperArmModel = glm::rotate(upperArmModel, glm::radians(linkTurnAngles[0]), glm::vec3(0.0f, 0.0f, 1.0f));
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
+                Limb.Draw( blinnPhongShader );
 
-            // Lower Arm
-            glm::mat4 lowerArmModel = glm::mat4(1.0f);
-            lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
-//            quatRotations[1] = glm::quat(
-//                                                    glm::cos(glm::radians(linkTurnAngles[1] / 2)),
-//                                                    rotationDirections[1] * glm::sin(glm::radians(linkTurnAngles[1] / 2))
-//                                                );
-            lowerArmModel = glm::rotate(lowerArmModel, glm::radians(linkTurnAngles[1]), glm::vec3(0.0f, 0.0f, 1.0f));
-            lowerArmModel *= glm::toMat4(quatRotations[1]);
-            lowerArmModel = upperArmModel * lowerArmModel;
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
-            Limb.Draw( blinnPhongShader );
+                // Lower Arm
+                glm::mat4 lowerArmModel = glm::mat4(1.0f);
+                lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                lowerArmModel = glm::rotate(lowerArmModel, glm::radians(linkTurnAngles[1]), glm::vec3(0.0f, 0.0f, 1.0f));
+                lowerArmModel *= glm::toMat4(quatRotations[1]);
+                lowerArmModel = upperArmModel * lowerArmModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
+                Limb.Draw( blinnPhongShader );
 
-            // Link 3
-            glm::mat4 link3Model = glm::mat4(1.0f);
-            link3Model = glm::translate(link3Model, glm::vec3(2.0f, 0.0f, 0.0f));
-//            quatRotations[2] = glm::quat(
-//                                                    glm::cos(glm::radians(linkTurnAngles[2] / 2)),
-//                                                    rotationDirections[2] * glm::sin(glm::radians(linkTurnAngles[2] / 2))
-//                                                );
-            link3Model = glm::rotate(link3Model, glm::radians(linkTurnAngles[2]), glm::vec3(0.0f, 0.0f, 1.0f));
-//            link3Model *= glm::toMat4(quatRotations[2]);
-            link3Model = lowerArmModel * link3Model;
-            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( link3Model ) );
-            Limb.Draw( blinnPhongShader );
-            
-            
-            endEffector = glm::mat4(1.0f);
-            endEffector = glm::translate(endEffector, glm::vec3(2.0f, 0.0f, 0.0f));
-//            endEffector = glm::rotate(endEffector, glm::radians(linkTurnAngles[2]), glm::vec3(0.0f, 0.0f, 1.0f));
-            endEffector = link3Model * endEffector;
-//            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( link4Model ) );
-//            Limb.Draw( blinnPhongShader );
+                // HAND
+                glm::mat4 handModel = glm::mat4(1.0f);
+                handModel = glm::translate(handModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                handModel = glm::rotate(handModel, glm::radians(linkTurnAngles[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+                handModel = lowerArmModel * handModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( handModel ) );
+                Limb.Draw( blinnPhongShader );
+                
+                endEffector = glm::mat4(1.0f);
+                endEffector = glm::translate(endEffector, glm::vec3(2.0f, 0.0f, 0.0f));
+                endEffector = handModel * endEffector;
+            }else{
+                // UPPER ARM
+                glm::mat4 upperArmModel = glm::mat4(1.0f);
+                upperArmModel = glm::rotate(upperArmModel, glm::radians(forwardRotDegUpper1), glm::vec3(0.0f, 0.0f, 1.0f));
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
+                Limb.Draw( blinnPhongShader );
 
-//            glm::mat4 link5Model = glm::mat4(1.0f);
-//            link5Model = glm::translate(link5Model, glm::vec3(2.0f, 0.0f, 0.0f));
-//            link5Model = glm::rotate(link5Model, glm::radians(linkTurnAngles[4]), glm::vec3(0.0f, 0.0f, 1.0f));
-//            link5Model = link4Model * link5Model;
-//            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( link4Model ) );
-//            Limb.Draw( blinnPhongShader );
+                // Lower Arm
+                glm::mat4 lowerArmModel = glm::mat4(1.0f);
+                lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                lowerArmModel = glm::rotate(lowerArmModel, glm::radians(forwardRotDegLower1), glm::vec3(0.0f, 0.0f, 1.0f));
+                lowerArmModel *= glm::toMat4(quatRotations[1]);
+                lowerArmModel = upperArmModel * lowerArmModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
+                Limb.Draw( blinnPhongShader );
+
+                // HAND
+                glm::mat4 handModel = glm::mat4(1.0f);
+                handModel = glm::translate(handModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                handModel = glm::rotate(handModel, glm::radians(forwardRotDegHand1), glm::vec3(0.0f, 0.0f, 1.0f));
+                handModel = lowerArmModel * handModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( handModel ) );
+                Limb.Draw( blinnPhongShader );
+                
+                // UPPER ARM
+                glm::mat4 upperArmModel1 = glm::mat4(1.0f);
+                upperArmModel1 = glm::translate(upperArmModel1, glm::vec3(-2.0f, 0.0f, 0.0f));
+                upperArmModel1 = glm::rotate(upperArmModel1, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                upperArmModel1 = glm::rotate(upperArmModel1, glm::radians(forwardRotDegUpper2), glm::vec3(0.0f, 0.0f, 1.0f));
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel1 ) );
+                Limb.Draw( blinnPhongShader );
+
+                // Lower Arm
+                glm::mat4 lowerArmModel1 = glm::mat4(1.0f);
+                lowerArmModel1 = glm::translate(lowerArmModel1, glm::vec3(2.0f, 0.0f, 0.0f));
+                lowerArmModel1 = glm::rotate(lowerArmModel1, glm::radians(forwardRotDegLower2), glm::vec3(0.0f, 0.0f, 1.0f));
+                lowerArmModel1 *= glm::toMat4(quatRotations[1]);
+                lowerArmModel1 = upperArmModel1 * lowerArmModel1;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel1 ) );
+                Limb.Draw( blinnPhongShader );
+
+                // HAND
+                glm::mat4 handModel1 = glm::mat4(1.0f);
+                handModel1 = glm::translate(handModel1, glm::vec3(2.0f, 0.0f, 0.0f));
+                handModel1 = glm::rotate(handModel1, glm::radians(forwardRotDegHand2), glm::vec3(0.0f, 0.0f, 1.0f));
+                handModel1 = lowerArmModel1 * handModel1;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( handModel1 ) );
+                Limb.Draw( blinnPhongShader );
+                
+                // BALL
+                glm::mat4 BallModel = glm::mat4(1.0f);
+                BallModel = glm::translate(BallModel, glm::vec3(2.0f, 0.0f, 0.0f));
+                BallModel = handModel * BallModel;
+                glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( BallModel ) );
+                Ball.Draw( blinnPhongShader );
+            }
         }
         
-//        glm::mat4 BodyModel = glm::mat4(1.0f);
-//        BodyModel = glm::translate(BodyModel, glm::vec3(-1.0f, 0.0f, 0.0f));
-//        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( BodyModel ) );
-//        Body.Draw( blinnPhongShader );
-//        BlinnPhongLighting( blinnPhongShader );
-        
-        glm::mat4 BallModel = glm::mat4(1.0f);
-        BallModel = glm::translate(BallModel, BallPosition);
-        blinnPhongShader.Use( );
-        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
-        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
-        glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
-        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( BallModel ) );
-        Ball.Draw( blinnPhongShader );
+        glm::mat4 FaceModel = glm::mat4(1.0f);
+        FaceModel = glm::scale(FaceModel, glm::vec3(0.75f));
+        FaceModel = glm::translate(FaceModel, glm::vec3(-1.5f, 3.5f, 0.0f));
+        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( FaceModel ) );
+        Face.Draw( blinnPhongShader );
         BlinnPhongLighting( blinnPhongShader );
+        
+        glm::mat4 BodyModel = glm::mat4(1.0f);
+        BodyModel = glm::translate(BodyModel, glm::vec3(-1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( BodyModel ) );
+        Body.Draw( blinnPhongShader );
+        BlinnPhongLighting( blinnPhongShader );
+        
+        if (!forwardKinematics)
+        {
+            glm::mat4 BallModel = glm::mat4(1.0f);
+            BallModel = glm::translate(BallModel, BallPosition);
+            blinnPhongShader.Use( );
+            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "projection" ), 1, GL_FALSE, glm::value_ptr( projection ) );
+            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "view" ), 1, GL_FALSE, glm::value_ptr( view ) );
+            glUniform1i( glGetUniformLocation( blinnPhongShader.Program, "useIt" ), 1 );
+            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( BallModel ) );
+            Ball.Draw( blinnPhongShader );
+            BlinnPhongLighting( blinnPhongShader );
+        }
+
         
         text.RenderText(textShader, "", 0.0f, 0.0f, 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
         
@@ -649,7 +629,6 @@ int main()
         glBindVertexArray( 0 );
         glDepthFunc( GL_LESS );
         
-//        ImGuiWindowing();
         glfwSwapBuffers( window );
     }
     glDeleteVertexArrays(1, &skyboxVAO);
@@ -666,17 +645,17 @@ void DoMovement( )
     {
         camera.ProcessKeyboard( FORWARD, deltaTime );
     }
-
+    
     if ( keys[GLFW_KEY_S])
     {
         camera.ProcessKeyboard( BACKWARD, deltaTime );
     }
-
+    
     if ( keys[GLFW_KEY_A] )
     {
         camera.ProcessKeyboard( LEFT, deltaTime );
     }
-
+    
     if ( keys[GLFW_KEY_D] )
     {
         camera.ProcessKeyboard( RIGHT, deltaTime );
@@ -687,17 +666,17 @@ void DoMovement( )
     {
         BallPosition.y += movementSpeed;
     }
-
+    
     if ( keys[GLFW_KEY_LEFT])
     {
         BallPosition.x -= movementSpeed;
     }
-
+    
     if ( keys[GLFW_KEY_DOWN] )
     {
         BallPosition.y -= movementSpeed;
     }
-
+    
     if ( keys[GLFW_KEY_RIGHT] )
     {
         BallPosition.x += movementSpeed;
@@ -707,10 +686,73 @@ void DoMovement( )
     {
         BallPosition.z -= movementSpeed;
     }
-
+    
     if ( keys[GLFW_KEY_E] )
     {
         BallPosition.z += movementSpeed;
+    }
+    
+    if (forwardKinematics)
+    {
+        if ( keys[GLFW_KEY_I] )
+        {
+            forwardRotDegUpper1 += 0.75;
+        }
+
+        if ( keys[GLFW_KEY_O] )
+        {
+            forwardRotDegUpper1 -= 0.75;
+        }
+        
+        if ( keys[GLFW_KEY_J] )
+        {
+            forwardRotDegLower1 += 0.75;
+        }
+
+        if ( keys[GLFW_KEY_K] )
+        {
+            forwardRotDegLower1 -= 0.75;
+        }
+        
+        if ( keys[GLFW_KEY_N] )
+        {
+            forwardRotDegHand1 += 0.75;
+        }
+
+        if ( keys[GLFW_KEY_M] )
+        {
+            forwardRotDegHand1 -= 0.75;
+        }
+        
+        if ( keys[GLFW_KEY_Y] )
+        {
+            forwardRotDegUpper2 += 0.75;
+        }
+
+        if ( keys[GLFW_KEY_U] )
+        {
+            forwardRotDegUpper2 -= 0.75;
+        }
+        
+        if ( keys[GLFW_KEY_G] )
+        {
+            forwardRotDegLower2 += 0.75;
+        }
+
+        if ( keys[GLFW_KEY_H] )
+        {
+            forwardRotDegLower2 -= 0.75;
+        }
+        
+        if ( keys[GLFW_KEY_V] )
+        {
+            forwardRotDegHand2 += 0.75;
+        }
+
+        if ( keys[GLFW_KEY_B] )
+        {
+            forwardRotDegHand2 -= 0.75;
+        }
     }
     
     if ( keys[GLFW_KEY_C] )
@@ -751,6 +793,11 @@ void KeyCallback( GLFWwindow *window, int key, int scancode, int action, int mod
             BallPosition = glm::vec3(6.0f, 0.0f, 0.0f);
             SetAnalytical = false;
             SetNumerical = true;
+        }
+        
+        if ( keys[GLFW_KEY_F] )
+        {
+            forwardKinematics = !forwardKinematics;
         }
     }
 }

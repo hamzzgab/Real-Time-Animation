@@ -26,7 +26,6 @@
 		2AB928C0298AE3680028575C /* imgui_demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AB928B7298AE3680028575C /* imgui_demo.cpp */; };
 		2AB928C1298AE3680028575C /* imgui_tables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AB928B9298AE3680028575C /* imgui_tables.cpp */; };
 		2AB928C2298AE3680028575C /* imgui_impl_opengl3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AB928BB298AE3680028575C /* imgui_impl_opengl3.cpp */; };
-		2ADDEC8C2997C4DC002D99CE /* maths_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2ADDEC8A2997C4DC002D99CE /* maths_funcs.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -101,8 +100,6 @@
 		2AB928C6298AE4050028575C /* Camera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Camera.h; sourceTree = "<group>"; };
 		2AB928C7298AE4050028575C /* Text.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Text.h; sourceTree = "<group>"; };
 		2AB928C8298AE4050028575C /* Mesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Mesh.h; sourceTree = "<group>"; };
-		2ADDEC8A2997C4DC002D99CE /* maths_funcs.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = maths_funcs.cpp; sourceTree = "<group>"; };
-		2ADDEC8B2997C4DC002D99CE /* maths_funcs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = maths_funcs.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,8 +144,6 @@
 				2AB92896298AE3060028575C /* SOIL2 */,
 				2AB92893298AE2E90028575C /* res */,
 				2AB9287D298AE1790028575C /* main.cpp */,
-				2ADDEC8A2997C4DC002D99CE /* maths_funcs.cpp */,
-				2ADDEC8B2997C4DC002D99CE /* maths_funcs.h */,
 				2AB928C6298AE4050028575C /* Camera.h */,
 				2AB928C8298AE4050028575C /* Mesh.h */,
 				2AB928C4298AE4050028575C /* Model.h */,
@@ -289,7 +284,6 @@
 				2AB928C1298AE3680028575C /* imgui_tables.cpp in Sources */,
 				2AB928C2298AE3680028575C /* imgui_impl_opengl3.cpp in Sources */,
 				2AB928BD298AE3680028575C /* imgui_widgets.cpp in Sources */,
-				2ADDEC8C2997C4DC002D99CE /* maths_funcs.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
