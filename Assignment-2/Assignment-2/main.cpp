@@ -21,6 +21,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "glm/gtc/matrix_transform.hpp"
+#include <glm/gtx/vector_angle.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 // Other Libs
 #include "imgui/imgui.h"
@@ -67,7 +70,7 @@ GLfloat lastFrame = 0.0f;
 
 //------------END TARGET COMPONENTS-----------------------------------
 GLfloat movementSpeed = 0.075f;
-glm::vec3 BallPosition(6.0f, 0.0f, 0.0f);
+glm::vec3 BallPosition(10.0f, 0.0f, 0.0f);
 //--------------------------------------------------------------------
 
 //------------ANALYTICAL VARIABLES------------------------------------
@@ -80,62 +83,60 @@ int armLengthL2 = 2;
 //------------CCD VARIABLES-------------------------------------------
 int EFFECTOR_POS      = 3;
 GLfloat IK_POS_THRESH = 1.0f;
-bool m_Damping        = false;
+bool m_Damping        = true;
 bool m_DOF_Restrict   = false;
 int MAX_IK_TRIES      = 100;
 
-struct Bone{
-    glm::vec3 b_scale;
-    glm::vec3 b_rot;
-    glm::vec3 b_trans;
-    
-    glm::vec3 scale;
-    glm::vec3 rot;
-    glm::vec3 trans;
-    
-    GLint min_rx, max_rx;
-    GLint min_ry, max_ry;
-    GLint min_rz, max_rz;
-    
-    GLfloat damp_width, damp_strength;
-};
 
-glm::vec3 links[4];
-GLfloat linksDampWidth[4];
-GLint linksDOFRestrictionsMin[4];
-GLint linksDOFRestrictionsMax[4];
-GLfloat linkTurnAngles[4];
+
+glm::quat quatRotations[3];
+glm::vec3 rotationDirections[3];
+glm::vec3 links[3];
+GLfloat linksDampWidth[3];
+GLint linksDOFRestrictionsMin[3];
+GLint linksDOFRestrictionsMax[3];
+GLfloat linkTurnAngles[3];
+glm::vec3 linkTurnEulAngles[3] {};
+glm::mat4 endEffector = glm::mat4(1.0f);
 //--------------------------------------------------------------------
 
 bool SetAnalytical = true;
 bool SetNumerical = false;
 
 void setUpLinks() {
-    
+    quatRotations[0] = glm::quat(1.0f, glm::vec3(0.0f));
+    quatRotations[1] = glm::quat(1.0f, glm::vec3(0.0f));
+    quatRotations[2] = glm::quat(1.0f, glm::vec3(0.0f));
     links[0] = glm::vec3(0.0f, 0.0f, 0.0f);
     links[1] = glm::vec3(2.0f, 0.0f, 0.0f);
     links[2] = glm::vec3(4.0f, 0.0f, 0.0f);
-    links[3] = glm::vec3(6.0f, 0.0f, 0.0f);
+//    links[3] = glm::vec3(6.0f, 0.0f, 0.0f);
+//    links[4] = glm::vec3(8.0f, 0.0f, 0.0f);
     
-    linksDampWidth[0] = 10.0f;
-    linksDampWidth[1] = 10.0f;
-    linksDampWidth[2] = 10.0f;
-    linksDampWidth[3] = 10.0f;
+    linksDampWidth[0] = 30.0f;
+    linksDampWidth[1] = 30.0f;
+    linksDampWidth[2] = 30.0f;
+//    linksDampWidth[3] = 360.0f;
+//    linksDampWidth[4] = 360.0f;
     
-    linksDOFRestrictionsMin[0] = -90;
-    linksDOFRestrictionsMin[1] = -90;
-    linksDOFRestrictionsMin[2] = -90;
-    linksDOFRestrictionsMin[3] = -90;
     
-    linksDOFRestrictionsMax[0] = 90;
-    linksDOFRestrictionsMax[1] = 90;
-    linksDOFRestrictionsMax[2] = 90;
-    linksDOFRestrictionsMax[3] = 90;
+    linksDOFRestrictionsMin[0] = 0;
+    linksDOFRestrictionsMin[1] = 0;
+    linksDOFRestrictionsMin[2] = 0;
+//    linksDOFRestrictionsMin[3] = -30;
+//    linksDOFRestrictionsMin[4] = -30;
+    
+    linksDOFRestrictionsMax[0] = 120;
+    linksDOFRestrictionsMax[1] = 120;
+    linksDOFRestrictionsMax[2] = 120;
+//    linksDOFRestrictionsMax[3] = 30;
+//    linksDOFRestrictionsMax[4] = 30;
     
     linkTurnAngles[0] = 0.0f;
     linkTurnAngles[1] = 0.0f;
     linkTurnAngles[2] = 0.0f;
-    linkTurnAngles[3] = 0.0f;
+//    linkTurnAngles[3] = 0.0f;
+//    linkTurnAngles[4] = 0.0f;
 }
 
 //--------------------------------------------------------------------
@@ -170,7 +171,7 @@ void ComputeAnalyticalLink(float x, float y) {
     //-----LOCAL VARIABLES------------------------------------------------
     float l1 = 0, l2 = 0;
     float ex = 0, ey = 0;
-    float cos2 = 0;
+    float cosAngle = 0;
     //--------------------------------------------------------------------
     
     ex = x;
@@ -189,9 +190,9 @@ void ComputeAnalyticalLink(float x, float y) {
 
     float Theta2 = (float)glm::acos(((x*x + y*y) - (l1*l1 + l2*l2)) / (2 * l1 * l2));
     
-    cos2 = ((ex * ex) + (ey * ey) - (l1 * l1) - (l2 * l2)) / (2 * l1 * l2);
+    cosAngle = ((ex * ex) + (ey * ey) - (l1 * l1) - (l2 * l2)) / (2 * l1 * l2);
 
-    if (cos2 >= -1.0 && cos2 <= 1.0) {
+    if (cosAngle >= -1.0 && cosAngle <= 1.0) {
         lowerArmAngle = -glm::degrees(Theta2);
         upperArmAngle = glm::degrees(Theta1);
     }
@@ -288,7 +289,8 @@ glm::vec3 GetWorldPosition(glm::mat4& transform) {
 // Arguments: End Target (x,y)
 // Returns:   None
 //--------------------------------------------------------------------
-void ComputeCCD(GLfloat x, GLfloat y, GLfloat z)
+bool shouldDraw = true;
+void ComputeCCD(glm::vec3 TargetPos)
 {
     //-----LOCAL VARIABLES------------------------------------------------
     glm::vec3 rootPos,curEnd,desiredEnd,targetVector,curVector,crossResult = glm::vec3(1.0f);
@@ -299,53 +301,59 @@ void ComputeCCD(GLfloat x, GLfloat y, GLfloat z)
     link = EFFECTOR_POS - 1;
     tries = 0;
 
-    while(tries < 100)
+    do
     {
-        rootPos.x = links[link].x;
-        rootPos.y = links[link].y;
-        rootPos.z = links[link].z;
-        
-        curEnd.x = links[link+1].x;
-        curEnd.y = links[link+1].y;
-        curEnd.z = links[link+1].z;
-              
-        desiredEnd.x = (GLfloat)x;
-        desiredEnd.y = (GLfloat)y;
-        desiredEnd.z = (GLfloat)0.0f;
-        
-        
-        if (VectorSquaredDistance(&curEnd, &desiredEnd) > 1.0f)
+//        rootPos.x = links[link].x;
+//        rootPos.y = links[link].y;
+//        rootPos.z = links[link].z;
+//
+//        curEnd.x = links[EFFECTOR_POS].x;
+//        curEnd.y = links[EFFECTOR_POS].y;
+//        curEnd.z = links[EFFECTOR_POS].z;
+//
+//        desiredEnd.x = (GLfloat)TargetPos.x;
+//        desiredEnd.y = (GLfloat)TargetPos.y;
+//        desiredEnd.z = (GLfloat)TargetPos.z;
+        rootPos = links[link];
+        //curEnd = links[EFFECTOR_POS];
+        curEnd = GetWorldPosition(endEffector);
+        desiredEnd = TargetPos;
+        if (glm::distance(curEnd, desiredEnd) > IK_POS_THRESH)
         {
-            curVector.x = curEnd.x - rootPos.x;
-            curVector.y = curEnd.y - rootPos.y;
-            curVector.z = curEnd.z - rootPos.z;
+            shouldDraw = false;
+//            curVector.x = curEnd.x - rootPos.x;
+//            curVector.y = curEnd.y - rootPos.y;
+//            curVector.z = curEnd.z - rootPos.z;
+            curVector = curEnd - rootPos;
+//            targetVector.x = TargetPos.x - rootPos.x;
+//            targetVector.y = TargetPos.y - rootPos.y;
+//            targetVector.z = TargetPos.z - rootPos.z;
+            targetVector = TargetPos - rootPos;
             
-            targetVector.x = x - rootPos.x;
-            targetVector.y = y - rootPos.y;
-            targetVector.z = 0.0f;
-            
-            NormalizeVector(&curVector);
-            NormalizeVector(&targetVector);
-            
-            cosAngle = DotProduct(&targetVector, &curVector);
+            curVector    = glm::normalize(curVector);
+            targetVector = glm::normalize(targetVector);
+//            LookAts[link].direction = targetVector;
+//            LookAts[link].up = glm::vec3(0.0f, 1.0f, 0.0f);
+//            LookAts[link].right = glm::cross(LookAts[link].direction, LookAts[link].up);
+//            LookAts[link].up = glm::cross(LookAts[link].direction, LookAts[link].right);
+            cosAngle = glm::dot(targetVector, curVector);
             
             if (cosAngle < 0.99999f)
             {
-                CrossProduct(&targetVector, &curVector, &crossResult);
-             
-                if (crossResult.z > 0.0f)
-                {
+                crossResult = glm::cross(curVector, targetVector);
+                rotationDirections[link] = crossResult;
                     turnAngle = glm::acos((GLfloat)cosAngle);
                     turnDeg = glm::degrees(turnAngle);
-                    linkTurnAngles[link] -= (GLfloat)turnDeg;
-             
+                if (crossResult.z > 0.0f)
+                {
+
                     if (m_Damping && turnDeg > linksDampWidth[link])
                     {
-                        turnDeg = linksDampWidth[link];
+                        turnDeg -= linksDampWidth[link];
                     }
-             
-                    linkTurnAngles[link] -= (GLfloat)turnDeg;
-             
+
+                    linkTurnAngles[link] += (GLfloat)turnDeg;
+
                     if (m_DOF_Restrict && linkTurnAngles[link] < (GLfloat)linksDOFRestrictionsMin[link])
                     {
                         linkTurnAngles[link] = (GLfloat)linksDOFRestrictionsMin[link];
@@ -353,35 +361,32 @@ void ComputeCCD(GLfloat x, GLfloat y, GLfloat z)
                 }
                 else if (crossResult.z < 0.0f)
                 {
-                    turnAngle = glm::acos((GLfloat)cosAngle);
-                    turnDeg = glm::degrees(turnAngle);
-             
+
                     if (m_Damping && turnDeg > linksDampWidth[link])
                     {
-                        turnDeg = linksDampWidth[link];
+                        turnDeg += linksDampWidth[link];
                     }
-                    linkTurnAngles[link] += (GLfloat)turnDeg;
-             
+                    linkTurnAngles[link] -= (GLfloat)turnDeg;
+
                     if (m_DOF_Restrict && linkTurnAngles[link] > (GLfloat)linksDOFRestrictionsMax[link])
                     {
                         linkTurnAngles[link] = (GLfloat)linksDOFRestrictionsMax[link];
                     }
                 }
+//                linkTurnAngles[link] = turnDeg;
             }
             if (--link < 0) link = EFFECTOR_POS - 1;
         }
-    }
-//    while(tries++ < MAX_IK_TRIES);
-    
-    cout << linkTurnAngles[0] << " " << linkTurnAngles[1] << " " << linkTurnAngles[2] << endl;
-//        std::cout<<VectorSquaredDistance(&curEnd, &desiredEnd)<<std::endl;
-//    }while(tries++ < MAX_IK_TRIES && VectorSquaredDistance(&curEnd, &desiredEnd) > IK_POS_THRESH);
+        else {
+            shouldDraw = true;
+        }
+    }while(tries++ < MAX_IK_TRIES );
 
      
 }
 
 static GLFWwindow *window = nullptr;
-int main( )
+int main()
 {
     setUpLinks();
     glfwInit( );
@@ -425,8 +430,7 @@ int main( )
     Model Ball( "res/models/Ball.obj" );
     Model Body( "res/models/Body.obj" );
     Model Limb( "res/models/Limb.obj" );
-   
-
+    
     // SKYBOX
     Shader skyboxShader( "res/shaders/skybox.vs", "res/shaders/skybox.frag" );
 
@@ -517,6 +521,7 @@ int main( )
     
     Text text;
     
+    
     // GAME LOOP
     while( !glfwWindowShouldClose( window ) )
     {
@@ -557,36 +562,61 @@ int main( )
             Limb.Draw( blinnPhongShader );
         }else if (SetNumerical)
         {
-            ComputeCCD(BallPosition.x, BallPosition.y, BallPosition.z);
+            ComputeCCD(BallPosition);
+            
+//            points = DoFabrik(glm::vec3(0.0f), BallPosition, points, lengths);
+            
             
             glm::mat4 upperArmModel = glm::mat4(1.0f);
+//            quatRotations[0] = glm::quat(
+//                                                    glm::cos(glm::radians(linkTurnAngles[0] / 2)),
+//                                                    rotationDirections[0] * glm::sin(glm::radians(linkTurnAngles[0] / 2))
+//                                                );
+//            upperArmModel *= glm::toMat4(quatRotations[0]);
             upperArmModel = glm::rotate(upperArmModel, glm::radians(linkTurnAngles[0]), glm::vec3(0.0f, 0.0f, 1.0f));
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( upperArmModel ) );
             Limb.Draw( blinnPhongShader );
-//            links[0] = GetWorldPosition(upperArmModel);
 
             // Lower Arm
             glm::mat4 lowerArmModel = glm::mat4(1.0f);
             lowerArmModel = glm::translate(lowerArmModel, glm::vec3(2.0f, 0.0f, 0.0f));
+//            quatRotations[1] = glm::quat(
+//                                                    glm::cos(glm::radians(linkTurnAngles[1] / 2)),
+//                                                    rotationDirections[1] * glm::sin(glm::radians(linkTurnAngles[1] / 2))
+//                                                );
             lowerArmModel = glm::rotate(lowerArmModel, glm::radians(linkTurnAngles[1]), glm::vec3(0.0f, 0.0f, 1.0f));
+            lowerArmModel *= glm::toMat4(quatRotations[1]);
             lowerArmModel = upperArmModel * lowerArmModel;
-//            links[1] = GetWorldPosition(lowerArmModel);
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( lowerArmModel ) );
             Limb.Draw( blinnPhongShader );
 
             // Link 3
             glm::mat4 link3Model = glm::mat4(1.0f);
             link3Model = glm::translate(link3Model, glm::vec3(2.0f, 0.0f, 0.0f));
+//            quatRotations[2] = glm::quat(
+//                                                    glm::cos(glm::radians(linkTurnAngles[2] / 2)),
+//                                                    rotationDirections[2] * glm::sin(glm::radians(linkTurnAngles[2] / 2))
+//                                                );
             link3Model = glm::rotate(link3Model, glm::radians(linkTurnAngles[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+//            link3Model *= glm::toMat4(quatRotations[2]);
             link3Model = lowerArmModel * link3Model;
-//            links[2] = GetWorldPosition(link3Model);
             glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( link3Model ) );
             Limb.Draw( blinnPhongShader );
             
-//            glm::mat4 endEffectorTransform = glm::mat4(1.0f);
-//            endEffectorTransform = glm::translate(endEffectorTransform, glm::vec3(2.0f, 0.0f, 0.0f));
-//            endEffectorTransform = link3Model * endEffectorTransform;
-//            links[3] = GetWorldPosition(endEffectorTransform);
+            
+            endEffector = glm::mat4(1.0f);
+            endEffector = glm::translate(endEffector, glm::vec3(2.0f, 0.0f, 0.0f));
+//            endEffector = glm::rotate(endEffector, glm::radians(linkTurnAngles[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+            endEffector = link3Model * endEffector;
+//            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( link4Model ) );
+//            Limb.Draw( blinnPhongShader );
+
+//            glm::mat4 link5Model = glm::mat4(1.0f);
+//            link5Model = glm::translate(link5Model, glm::vec3(2.0f, 0.0f, 0.0f));
+//            link5Model = glm::rotate(link5Model, glm::radians(linkTurnAngles[4]), glm::vec3(0.0f, 0.0f, 1.0f));
+//            link5Model = link4Model * link5Model;
+//            glUniformMatrix4fv( glGetUniformLocation( blinnPhongShader.Program, "model" ), 1, GL_FALSE, glm::value_ptr( link4Model ) );
+//            Limb.Draw( blinnPhongShader );
         }
         
 //        glm::mat4 BodyModel = glm::mat4(1.0f);
@@ -656,25 +686,21 @@ void DoMovement( )
     if ( keys[GLFW_KEY_UP] )
     {
         BallPosition.y += movementSpeed;
-//        ComputeCCD(0.0f, 0.0f, 0.0f);
     }
 
     if ( keys[GLFW_KEY_LEFT])
     {
         BallPosition.x -= movementSpeed;
-//        ComputeCCD(0.0f, 0.0f, 0.0f);
     }
 
     if ( keys[GLFW_KEY_DOWN] )
     {
         BallPosition.y -= movementSpeed;
-//        ComputeCCD(0.0f, 0.0f, 0.0f);
     }
 
     if ( keys[GLFW_KEY_RIGHT] )
     {
         BallPosition.x += movementSpeed;
-//        ComputeCCD(0.0f, 0.0f, 0.0f);
     }
     
     if ( keys[GLFW_KEY_Q] )
@@ -685,6 +711,11 @@ void DoMovement( )
     if ( keys[GLFW_KEY_E] )
     {
         BallPosition.z += movementSpeed;
+    }
+    
+    if ( keys[GLFW_KEY_C] )
+    {
+        ComputeCCD(BallPosition);
     }
 }
 
