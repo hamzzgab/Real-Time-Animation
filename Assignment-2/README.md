@@ -2,7 +2,7 @@
 
 ## About
 
-This is the second assignment for Real-Time Animation (CS7GV5) at Trinity College Dublin. I have implemented Forward and Inverse Kinematics for both Simple and Complex Objects using Analytical and Numerical Methods. For the Numerical method I have implemented the Cyclic Coordinate Descent method referenced from [1].
+This is the second assignment for Real-Time Animation (CS7GV5) at Trinity College Dublin. I have implemented Forward and Inverse Kinematics for Simple and Complex Objects using Analytical and Numerical Methods. I have implemented the Cyclic Coordinate Descent method referenced from [1] for the Numerical method.
 
 ## Demonstration
 
