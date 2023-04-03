@@ -1,10 +1,20 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+title: CS7GV6-Assignments-2022-23
+message: Please copy this code for your Assignments
+type: software
 authors:
-- family-names: "Gabajiwala"
-  given-names: "Hamza"
-title: "Real-Time-Animation"
-version: 1.0.0
-doi: 10.5281/zenodo.1234
-date-released: 2023-04-03
-url: "https://github.com/hamzzgab/Real-Time-Animation"
+  - given-names: Hamza
+    family-names: Gabajiwala
+    email: hamzajg16@gmail.com
+    affiliation: Mr
+repository-code: 'https://github.com/hamzzgab/Real-Time-Animation'
+abstract: >-
+  This is the code for the Real-Time Animation Assignments
+  2022-23 (CS7GV6)
+keywords:
+  - CS7GV6
+license: MIT
+date-released: '2023-01-23'
