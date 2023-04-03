@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: CS7GV6-Assignments-2022-23
+title: CS7GV5-Assignments-2022-23
 message: Please copy this code for your Assignments
 type: software
 authors:
@@ -13,8 +13,8 @@ authors:
 repository-code: 'https://github.com/hamzzgab/Real-Time-Animation'
 abstract: >-
   This is the code for the Real-Time Animation Assignments
-  2022-23 (CS7GV6)
+  2022-23 (CS7GV5)
 keywords:
-  - CS7GV6
+  - CS7GV5
 license: MIT
 date-released: '2023-01-23'
